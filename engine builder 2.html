@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0b0f14" />
+<title>Engine Builder Simulator</title>
+<style>
+  :root{
+    --bg:#080b0f; --panel:#11161d; --panel2:#171e27; --line:#2a3440;
+    --text:#f3f6f9; --muted:#8e9aa8; --accent:#ff6b1a; --good:#4ade80;
+    --warn:#facc15; --bad:#fb7185; --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  body{min-height:100vh;overflow-x:hidden}
+  button{font:inherit;color:inherit}
+  .app{max-width:760px;margin:auto;min-height:100vh;background:linear-gradient(#0a0e13,#080b0f)}
+  header{position:sticky;top:0;z-index:10;background:rgba(8,11,15,.94);backdrop-filter:blur(12px);border-bottom:1px solid #18202a;padding:14px 16px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .brand{font-weight:900;letter-spacing:.6px}.brand span{color:var(--accent)}
+  .cash{padding:8px 11px;border-radius:10px;background:#10161d;border:1px solid var(--line);font-weight:800}
+  main{padding:16px 14px 100px}
+  .screen{display:none}.screen.active{display:block}
+  .hero{padding:12px 4px 18px}
+  h1{font-size:28px;line-height:1.05;margin:0 0 7px}.sub{color:var(--muted);font-size:14px;line-height:1.45}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(min-width:640px){.grid{grid-template-columns:repeat(3,1fr)}}
+  .card{background:linear-gradient(160deg,var(--panel),#0e1319);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+  .engine-card{min-height:190px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:.15s}
+  .engine-card:active{transform:scale(.985)}
+  .engine-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 15px 35px rgba(255,107,26,.12)}
+  .engine-icon{height:85px;border-radius:12px;background:linear-gradient(145deg,#202a34,#0b0f14);display:grid;place-items:center;overflow:hidden;position:relative;padding:6px}
+  .engine-icon svg{width:100%;height:100%;display:block}
+  .engine-name{font-size:17px;font-weight:900;margin-top:10px}.engine-meta{color:var(--muted);font-size:12px;margin-top:3px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+  .stat{background:#0c1116;border:1px solid #202934;border-radius:10px;padding:7px}.stat b{display:block;font-size:13px}.stat span{font-size:10px;color:var(--muted)}
+  .btn{border:0;border-radius:12px;padding:12px 14px;background:var(--panel2);border:1px solid var(--line);font-weight:800;cursor:pointer}
+  .btn.primary{background:var(--accent);border-color:#ff7e3b;color:white}.btn.good{background:#153821;border-color:#286b3b}.btn.small{padding:9px 10px;border-radius:10px;font-size:13px}
+  .btn:disabled{opacity:.42;cursor:not-allowed}
+  .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+  .section-title{margin:22px 2px 10px;font-size:14px;font-weight:900;letter-spacing:.4px;text-transform:uppercase;color:#c7d0db}
+  .bar{height:9px;background:#0a0f14;border:1px solid #202832;border-radius:999px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#ffb38c);border-radius:999px}
+  .machine{background:radial-gradient(circle at 50% 30%,#28313c,#10151c 55%,#080b0f);border:1px solid #26313d;border-radius:18px;padding:14px;min-height:250px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .engine-drawing{width:92%;height:210px;position:relative;margin:auto}
+  .engine-drawing svg{width:100%;height:100%;display:block}
+  .assembly-note{position:absolute;bottom:10px;left:12px;right:12px;text-align:center;color:#9ca8b5;font-size:12px}
+
+  /* --- engine assembly art --- */
+  .vispart{opacity:.2;transition:opacity .5s ease}
+  .vispart.on{opacity:1}
+  .vispart .m{fill:url(#ghostLin)}
+  .vispart .m2{fill:url(#ghostLin2)}
+  .vispart .rad{fill:url(#ghostRad)}
+  .vispart .rad2{fill:url(#ghostRad2)}
+  .vispart .chrome{stroke:url(#ghostChrome)}
+  .vispart .flat1{fill:#1f242a}
+  .vispart .flat2{fill:#171b20}
+  .vispart.on.t0 .m{fill:url(#budgetLin)}
+  .vispart.on.t0 .m2{fill:url(#budgetLin2)}
+  .vispart.on.t0 .rad{fill:url(#budgetRad)}
+  .vispart.on.t0 .rad2{fill:url(#budgetRad2)}
+  .vispart.on.t0 .chrome{stroke:url(#budgetChrome)}
+  .vispart.on.t0 .flat1{fill:#5b6672}
+  .vispart.on.t0 .flat2{fill:#3a424b}
+  .vispart.on.t1 .m{fill:url(#streetLin)}
+  .vispart.on.t1 .m2{fill:url(#streetLin2)}
+  .vispart.on.t1 .rad{fill:url(#streetRad)}
+  .vispart.on.t1 .rad2{fill:url(#streetRad2)}
+  .vispart.on.t1 .chrome{stroke:url(#streetChrome)}
+  .vispart.on.t1 .flat1{fill:#aeb8c2}
+  .vispart.on.t1 .flat2{fill:#838f9a}
+  .vispart.on.t2 .m{fill:url(#raceLin)}
+  .vispart.on.t2 .m2{fill:url(#raceLin2)}
+  .vispart.on.t2 .rad{fill:url(#raceRad)}
+  .vispart.on.t2 .rad2{fill:url(#raceRad2)}
+  .vispart.on.t2 .chrome{stroke:url(#raceChrome)}
+  .vispart.on.t2 .flat1{fill:#d9611c}
+  .vispart.on.t2 .flat2{fill:#a8430e}
+  .hi{fill:none;stroke:#fff;stroke-opacity:.16}
+  .cavity{fill:#12161b}
+  .hoseline{fill:none;stroke:#454e58;stroke-linecap:round}
+  .clamp{fill:#0a0d11;stroke:#3a424b;stroke-width:.75}
+  .vispart .tier2-only{display:none}
+  .vispart.t2 .tier2-only{display:inline}
+  .vispart.t2 .tier2-hide{display:none}
+  .enginePreview .vispart{opacity:1}
+  .enginePreview .m{fill:url(#previewLin) !important}
+  .enginePreview .m2{fill:url(#previewLin2) !important}
+  .enginePreview .rad{fill:url(#previewRad) !important}
+  .enginePreview .rad2{fill:url(#previewRad2) !important}
+  .enginePreview .chrome{stroke:url(#previewChrome) !important}
+  .enginePreview .flat1{fill:#8993a0 !important}
+  .enginePreview .flat2{fill:#565f68 !important}
+  .ground-shadow{fill:#000;opacity:.5}
+  .art-legend{display:flex;gap:16px;justify-content:center;margin-top:10px;font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.3px}
+  .art-legend .dot-b{color:#8a97a3}.art-legend .dot-s{color:#dbe3ea}.art-legend .dot-r{color:#ff8a3d}
+
+  .part{display:flex;align-items:center;gap:11px}
+  .part-info{flex:1;min-width:0}.part-name{font-weight:900;font-size:14px}.part-desc{font-size:11px;color:var(--muted);margin-top:2px}
+  .tag{display:inline-block;margin-top:5px;padding:3px 6px;border-radius:7px;background:#0b1015;border:1px solid #27313b;color:#aeb9c5;font-size:9px;font-weight:800}
+  .installed-tag{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:4px 8px;border-radius:8px;background:#0b1015;border:1px solid #27313b;font-size:10.5px;font-weight:800;color:#d9e0e7;max-width:100%}
+  .installed-tag b{color:var(--accent);font-weight:900}
+  .part-card{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .part-icon{width:42px;height:42px;border-radius:11px;background:#0c1117;border:1px solid #26313c;display:grid;place-items:center;font-size:21px;flex:0 0 auto}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(12,16,21,.97);border-top:1px solid #202a34;display:flex;justify-content:center}
+  .tabbar{width:min(760px,100%);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 6px max(6px,env(safe-area-inset-bottom))}
+  .tab{background:none;border:0;color:#778391;padding:7px 4px;border-radius:10px;font-size:11px;font-weight:800}.tab.active{color:white;background:#161d25}
+  .tab .ico{display:block;font-size:18px;margin-bottom:2px}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.kpi{padding:12px;background:#10161c;border:1px solid #232e38;border-radius:13px}.kpi b{font-size:20px;display:block}.kpi span{font-size:10px;color:var(--muted)}
+  .dyno{position:relative;height:250px;margin-top:10px;background:repeating-linear-gradient(to right,#121920 0,#121920 1px,#0d1217 1px,#0d1217 44px),repeating-linear-gradient(to bottom,#121920 0,#121920 1px,#0d1217 1px,#0d1217 44px);border:1px solid #27323e;border-radius:15px;overflow:hidden}
+  canvas{width:100%;height:100%;display:block}
+  .log{background:#090d12;border:1px solid #202a34;border-radius:12px;padding:10px;max-height:150px;overflow:auto;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#aab4bf}
+  .log div{padding:3px 0}.green{color:var(--good)}.yellow{color:var(--warn)}.red{color:var(--bad)}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;display:none;align-items:flex-end;justify-content:center}.modal.open{display:flex}
+  .sheet{width:min(760px,100%);max-height:90vh;overflow:auto;background:#10151b;border-top:1px solid #2c3844;border-radius:20px 20px 0 0;padding:17px}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.x{border:0;background:#1a222b;border-radius:10px;padding:7px 11px}
+  .option{border:1px solid var(--line);background:#121922;border-radius:13px;padding:12px;margin:8px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}
+  .option strong{display:block}.option small{color:var(--muted);display:block;margin-top:3px;line-height:1.4}
+  .toast{position:fixed;left:50%;bottom:82px;transform:translateX(-50%) translateY(15px);background:#f4f7fa;color:#111;border-radius:999px;padding:9px 14px;font-size:12px;font-weight:900;opacity:0;pointer-events:none;transition:.2s;z-index:60;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .muted{color:var(--muted)}
+  .split{display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .checkbox{display:flex;align-items:center;gap:8px;font-size:12px;color:#b4bec9}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .slider-row{padding:10px 0}.slider-label{display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:6px}
+
+  .choice-wrap{margin-top:8px}
+  .choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .choice{border:1px solid #293541;background:#0d1319;border-radius:10px;padding:8px 6px;text-align:center;cursor:pointer;font-size:10px;font-weight:900}
+  .choice small{display:block;color:#85919d;font-weight:700;margin-top:3px}
+  .choice.selected{border-color:var(--accent);background:#1a1511}
+  .choice:active{transform:scale(.98)}
+  .job-card{display:flex;align-items:center;gap:12px}.job-icon{font-size:27px;width:44px;text-align:center}.job-info{flex:1}.job-title{font-weight:900}.job-desc{font-size:11px;color:var(--muted);margin-top:2px}.job-reward{font-weight:900;color:var(--good);font-size:13px}
+  .tip{padding:11px 12px;background:#10171e;border:1px solid #26323d;border-radius:12px;margin:8px 0;font-size:12px;line-height:1.45}.tip b{color:#fff}
+  .money-big{font-size:34px;font-weight:950;letter-spacing:-1px}
+
+  .lesson-card{background:#0c1218;border:1px solid #24303a;border-radius:14px;padding:14px;margin-top:10px}.lesson-q{font-size:17px;font-weight:900;line-height:1.3}.lesson-context{font-size:12px;color:var(--muted);line-height:1.5;margin-top:7px}.lesson-options{display:grid;gap:8px;margin-top:14px}.lesson-option{border:1px solid #2a3540;background:#121922;border-radius:12px;padding:12px;text-align:left;font-weight:800;font-size:13px;cursor:pointer}.lesson-option:hover{border-color:#445361}.lesson-option.correct{border-color:#2f8a4d;background:#10261a}.lesson-option.wrong{border-color:#9b3b4a;background:#29141a}.lesson-feedback{margin-top:10px;padding:10px 11px;border-radius:10px;font-size:12px;line-height:1.45}.lesson-feedback.good{background:#10271a;border:1px solid #245e36}.lesson-feedback.bad{background:#29161b;border:1px solid #73313c}.lesson-progress{height:7px;background:#090e13;border:1px solid #202a34;border-radius:99px;overflow:hidden;margin-top:10px}.lesson-progress i{display:block;height:100%;background:var(--accent)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+<defs>
+  <filter id="engineDropShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000" flood-opacity=".55"/></filter>
+  <filter id="engineGroundBlur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
+  <linearGradient id="ghostLin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a424b"/><stop offset="1" stop-color="#1f242a"/></linearGradient>
+  <linearGradient id="ghostLin2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c333b"/><stop offset="1" stop-color="#171b20"/></linearGradient>
+  <radialGradient id="ghostRad" cx="32%" cy="28%" r="75%"><stop offset="0" stop-color="#3a424b"/><stop offset="1" stop-color="#1f242a"/></radialGradient>
+  <radialGradient id="ghostRad2" cx="34%" cy="30%" r="75%"><stop offset="0" stop-color="#2c333b"/><stop offset="1" stop-color="#171b20"/></radialGradient>
+  <linearGradient id="ghostChrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f242a"/><stop offset=".5" stop-color="#3a424b"/><stop offset="1" stop-color="#1f242a"/></linearGradient>
+  <linearGradient id="budgetLin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a2adb8"/><stop offset="1" stop-color="#5b6672"/></linearGradient>
+  <linearGradient id="budgetLin2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7c8894"/><stop offset="1" stop-color="#3a424b"/></linearGradient>
+  <radialGradient id="budgetRad" cx="32%" cy="28%" r="75%"><stop offset="0" stop-color="#a2adb8"/><stop offset="1" stop-color="#5b6672"/></radialGradient>
+  <radialGradient id="budgetRad2" cx="34%" cy="30%" r="75%"><stop offset="0" stop-color="#7c8894"/><stop offset="1" stop-color="#3a424b"/></radialGradient>
+  <linearGradient id="budgetChrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b6672"/><stop offset=".5" stop-color="#a2adb8"/><stop offset="1" stop-color="#5b6672"/></linearGradient>
+  <linearGradient id="streetLin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3f7fa"/><stop offset="1" stop-color="#aeb8c2"/></linearGradient>
+  <linearGradient id="streetLin2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9d2da"/><stop offset="1" stop-color="#838f9a"/></linearGradient>
+  <radialGradient id="streetRad" cx="32%" cy="28%" r="75%"><stop offset="0" stop-color="#f3f7fa"/><stop offset="1" stop-color="#aeb8c2"/></radialGradient>
+  <radialGradient id="streetRad2" cx="34%" cy="30%" r="75%"><stop offset="0" stop-color="#c9d2da"/><stop offset="1" stop-color="#838f9a"/></radialGradient>
+  <linearGradient id="streetChrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#aeb8c2"/><stop offset=".5" stop-color="#f3f7fa"/><stop offset="1" stop-color="#aeb8c2"/></linearGradient>
+  <linearGradient id="raceLin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc199"/><stop offset="1" stop-color="#d9611c"/></linearGradient>
+  <linearGradient id="raceLin2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9955"/><stop offset="1" stop-color="#a8430e"/></linearGradient>
+  <radialGradient id="raceRad" cx="32%" cy="28%" r="75%"><stop offset="0" stop-color="#ffc199"/><stop offset="1" stop-color="#d9611c"/></radialGradient>
+  <radialGradient id="raceRad2" cx="34%" cy="30%" r="75%"><stop offset="0" stop-color="#ff9955"/><stop offset="1" stop-color="#a8430e"/></radialGradient>
+  <linearGradient id="raceChrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9611c"/><stop offset=".5" stop-color="#ffc199"/><stop offset="1" stop-color="#d9611c"/></linearGradient>
+  <linearGradient id="previewLin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2e8ee"/><stop offset="1" stop-color="#8993a0"/></linearGradient>
+  <linearGradient id="previewLin2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#aeb8c2"/><stop offset="1" stop-color="#565f68"/></linearGradient>
+  <radialGradient id="previewRad" cx="32%" cy="28%" r="75%"><stop offset="0" stop-color="#e2e8ee"/><stop offset="1" stop-color="#8993a0"/></radialGradient>
+  <radialGradient id="previewRad2" cx="34%" cy="30%" r="75%"><stop offset="0" stop-color="#aeb8c2"/><stop offset="1" stop-color="#565f68"/></radialGradient>
+  <linearGradient id="previewChrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8993a0"/><stop offset=".5" stop-color="#e2e8ee"/><stop offset="1" stop-color="#8993a0"/></linearGradient>
+</defs>
+</svg>
+<div class="app">
+<header>
+  <div class="top">
+    <div class="brand">ENGINE <span>BUILDER</span></div>
+    <div class="cash" id="cash">$25,000</div>
+  </div>
+</header>
+
+<main>
+  <section id="home" class="screen active">
+    <div class="hero">
+      <h1>Build your dream motor.</h1>
+      <div class="sub">Choose a platform, spec every component with real brands and part numbers, watch it get bolted together, then put it on the dyno.</div>
+    </div>
+    <div class="section-title">Choose a platform</div>
+    <div class="grid" id="engineGrid"></div>
+  </section>
+
+  <section id="build" class="screen">
+    <div class="hero">
+      <div class="split">
+        <div><h1 id="buildTitle">Engine Build</h1><div class="sub" id="buildSub"></div></div>
+        <button class="btn small" onclick="resetBuild()">Reset</button>
+      </div>
+    </div>
+    <div class="machine">
+      <div class="engine-drawing" id="engineArt"></div>
+      <div class="assembly-note" id="assemblyNote">Start installing parts below.</div>
+    </div>
+    <div class="art-legend"><span class="dot-b">● Budget</span><span class="dot-s">● Street</span><span class="dot-r">● Race</span></div>
+
+    <div class="section-title">Build stats</div>
+    <div class="kpis">
+      <div class="kpi"><b id="hpOut">—</b><span>EST. HORSEPOWER</span></div>
+      <div class="kpi"><b id="tqOut">—</b><span>EST. TORQUE</span></div>
+      <div class="kpi"><b id="relOut">—</b><span>RELIABILITY</span></div>
+      <div class="kpi"><b id="valOut">—</b><span>BUILD VALUE</span></div>
+    </div>
+
+    <div class="section-title">Components</div>
+    <div id="parts"></div>
+
+    <div class="section-title">Assembly progress</div>
+    <div class="bar"><i id="progressBar" style="width:0%"></i></div>
+    <div class="sub" id="progressText" style="margin-top:6px"></div>
+    <div class="actions">
+      <button class="btn primary" id="finishBtn" onclick="finishBuild()">Assemble engine</button>
+      <button class="btn" onclick="openTune()">Tune & configure</button>
+    </div>
+  </section>
+
+  <section id="dyno" class="screen">
+    <div class="hero">
+      <h1>Dyno Lab</h1>
+      <div class="sub">A rough game estimate based on your installed parts and tune. Push the setup and see what breaks.</div>
+    </div>
+    <div class="dyno"><canvas id="chart" width="700" height="330"></canvas></div>
+    <div class="kpis" style="margin-top:10px">
+      <div class="kpi"><b id="dynoHp">—</b><span>PEAK HP</span></div>
+      <div class="kpi"><b id="dynoTq">—</b><span>PEAK TORQUE</span></div>
+      <div class="kpi"><b id="boostOut">—</b><span>BOOST / LOAD</span></div>
+      <div class="kpi"><b id="scoreOut">—</b><span>BUILD SCORE</span></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" onclick="runDyno()">Run dyno pull</button>
+      <button class="btn" onclick="openTune()">Change tune</button>
+    </div>
+    <div class="section-title">Dyno log</div>
+    <div class="log" id="dynoLog"><div class="muted">No pulls yet.</div></div>
+  </section>
+
+  <section id="garage" class="screen">
+    <div class="hero">
+      <h1>Garage</h1>
+      <div class="sub">Your current project and spending.</div>
+    </div>
+    <div class="card">
+      <div class="split"><strong>Current engine</strong><strong id="garageEngine">None</strong></div>
+      <div class="machine" style="min-height:170px;margin:12px 0;padding:10px">
+        <div class="engine-drawing" style="height:150px" id="engineArtGarage"></div>
+      </div>
+      <div class="bar" style="margin:12px 0 6px"><i id="garageBar" style="width:0%"></i></div>
+      <div class="split muted" style="font-size:12px"><span id="garageProgress">0% assembled</span><span id="garageSpent">$0 spent</span></div>
+    </div>
+    <div class="section-title">How to play</div>
+    <div class="card" style="line-height:1.55;font-size:13px">
+      Pick an engine platform → install real parts from real brands → tune fuel/boost → assemble → run the dyno.
+      Better parts improve power, reliability, and score, but they cost more. Over-aggressive tunes can make the engine less reliable.
+    </div>
+  </section>
+
+  <section id="career" class="screen">
+    <div class="hero">
+      <h1>Earn Money</h1>
+      <div class="sub">Take jobs to fund better parts. Jobs use time, so decide whether to grind cash or invest in the current build.</div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="muted" style="font-size:11px">AVAILABLE CASH</div>
+      <div class="money-big" id="careerCash">$0</div>
+      <div class="sub" id="jobStreakText">Complete jobs to unlock higher-paying work.</div>
+    </div>
+    <div class="section-title">Available jobs</div>
+    <div id="jobs"></div>
+    <div class="section-title">Tune tips</div>
+    <div class="tip"><b>Street build:</b> Keep boost/load around 35–60% and timing/fuel near the middle. This is the safest place to start.</div>
+    <div class="tip"><b>Power build:</b> Raise boost first, then fuel. Add timing last. More power is possible, but reliability falls quickly when all three are pushed.</div>
+    <div class="tip"><b>Efficiency:</b> The “Street-safe tune” caps aggressive settings. It gives up some peak power but makes your build much harder to hurt on the dyno.</div>
+    <div class="tip"><b>Part strategy:</b> Spending more is not automatically better. Cooling and reliability parts can let you safely run a stronger tune than a cheap all-power setup.</div>
+  </section>
+
+</main>
+
+<div class="tabs">
+  <div class="tabbar">
+    <button class="tab active" data-screen="home"><span class="ico">🏠</span>Engines</button>
+    <button class="tab" data-screen="build"><span class="ico">🔧</span>Build</button>
+    <button class="tab" data-screen="dyno"><span class="ico">📈</span>Dyno</button>
+    <button class="tab" data-screen="garage"><span class="ico">🧰</span>Garage</button>
+    <button class="tab" data-screen="career"><span class="ico">💰</span>Earn</button>
+  </div>
+</div>
+
+<div class="modal" id="tuneModal" onclick="if(event.target===this)closeTune()">
+  <div class="sheet">
+    <div class="sheet-head"><strong>Tune & configure</strong><button class="x" onclick="closeTune()">✕</button></div>
+    <div class="sub">Dial the setup before the dyno. Higher aggressiveness can add power but reduces reliability.</div>
+    <div class="slider-row">
+      <div class="slider-label"><span>Fuel / Injection</span><span id="fuelVal">50%</span></div>
+      <input id="fuel" type="range" min="0" max="100" value="50" oninput="syncTune()">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label"><span>Boost / Load</span><span id="boostVal">50%</span></div>
+      <input id="boost" type="range" min="0" max="100" value="50" oninput="syncTune()">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label"><span>Ignition / Timing</span><span id="timingVal">50%</span></div>
+      <input id="timing" type="range" min="0" max="100" value="50" oninput="syncTune()">
+    </div>
+    <label class="checkbox"><input type="checkbox" id="econ"> Street-safe tune (caps risky settings)</label>
+    <div class="actions"><button class="btn primary" onclick="saveTune()">Save tune</button><button class="btn" onclick="closeTune()">Cancel</button></div>
+  </div>
+</div>
+
+<div class="modal" id="choiceModal" onclick="if(event.target===this)closeChoice()">
+  <div class="sheet">
+    <div class="sheet-head"><strong id="choiceTitle">Choose part</strong><button class="x" onclick="closeChoice()">✕</button></div>
+    <div class="sub" id="choiceSub">Select the balance that fits your build.</div>
+    <div id="choiceOptions"></div>
+  </div>
+</div>
+<div class="modal" id="jobModal">
+  <div class="sheet">
+    <div class="sheet-head"><strong id="jobModalTitle">Garage Job</strong><button class="x" onclick="closeJob()">✕</button></div>
+    <div class="sub" id="jobModalSub"></div>
+    <div class="lesson-progress"><i id="jobProgress" style="width:0%"></i></div>
+    <div class="lesson-card" id="jobLesson"></div>
+    <div class="actions" id="jobActions"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------------------------------------------------------------
+   Part catalogs. Each part has a generic slot name/description, plus
+   three real-world-styled options (Budget / Street / Race tiers), each
+   carrying a realistic brand + part name so choices read like an actual
+   build sheet instead of generic labels.
+--------------------------------------------------------------------- */
+const ENGINE_DATA = {
+  ea888:{
+    name:"EA888", family:"2.0L Turbo I4 (VW/Audi)", baseHp:220, baseTq:258, baseReliability:82, price:6200,
+    blurb:"Compact turbo four with huge aftermarket potential.",
+    parts:[
+      {id:"short",name:"Short Block",desc:"Pistons, rods & crankshaft",icon:"⚙️",options:[
+        {tier:"Budget",name:"OEM Reman Short Block",desc:"Factory-spec rebuild with cast pistons.",cost:2016,hp:13,rel:13},
+        {tier:"Street",name:"IE Street Forged Rod Kit",desc:"Integrated Engineering forged rods on OEM+ pistons.",cost:2800,hp:20,rel:8},
+        {tier:"Race",name:"CP-Carrillo Forged Piston & Rod Set",desc:"Full forged bottom end for high-boost abuse.",cost:4620,hp:31,rel:3}
+      ]},
+      {id:"head",name:"Cylinder Head",desc:"Valvetrain & port work",icon:"🔩",options:[
+        {tier:"Budget",name:"OEM Reflow Head Service",desc:"Resurfaced factory head, new valve seals.",cost:1330,hp:12,rel:4},
+        {tier:"Street",name:"IE Race Camshafts + Supertech Springs",desc:"Mild porting with an upgraded valvetrain.",cost:1900,hp:18,rel:3},
+        {tier:"Race",name:"CNC-Ported Head, Supertech Inconel Valves",desc:"Max-flow ported head for serious airflow.",cost:2945,hp:27,rel:2}
+      ]},
+      {id:"turbo",name:"Turbocharger",desc:"Forced induction hardware",icon:"🌀",options:[
+        {tier:"Budget",name:"OEM IS20 Hybrid (Reflashed)",desc:"Stock-frame hybrid upgrade, keeps factory spool.",cost:1728,hp:32,rel:-3},
+        {tier:"Street",name:"Garrett GTX2867R Gen2",desc:"Quick-spooling ball-bearing performance turbo.",cost:2400,hp:48,rel:-2},
+        {tier:"Race",name:"Precision Turbo PT6266 Gen2",desc:"Big-frame turbo built for serious top-end power.",cost:3960,hp:74,rel:-1}
+      ]},
+      {id:"fuel",name:"Fuel System",desc:"Injectors & fuel delivery",icon:"⛽",options:[
+        {tier:"Budget",name:"IE OEM+ High-Pressure Fuel Pump",desc:"Upgraded HPFP for mild boost gains.",cost:1080,hp:13,rel:-2},
+        {tier:"Street",name:"DeatschWerks DW300C + Walbro 450",desc:"Port injectors plus an in-tank pump upgrade.",cost:1500,hp:20,rel:-1},
+        {tier:"Race",name:"Bosch Motorsport 1000cc + Triple Walbro E85",desc:"Max-flow fueling for E85 and big power.",cost:2475,hp:31,rel:0}
+      ]},
+      {id:"intake",name:"Intake System",desc:"Airflow into the engine",icon:"🌬️",options:[
+        {tier:"Budget",name:"APR Cold Air Intake",desc:"Drop-in cold air kit, less restriction.",cost:490,hp:7,rel:1},
+        {tier:"Street",name:"IE High-Flow Intake System",desc:"Larger tube and filter for reduced restriction.",cost:700,hp:10,rel:1},
+        {tier:"Race",name:"ITG Maxogen Velocity Stack Intake",desc:"Individual velocity stacks for max top-end flow.",cost:1085,hp:15,rel:1}
+      ]},
+      {id:"exhaust",name:"Exhaust System",desc:"Spent gas flow & tone",icon:"💨",options:[
+        {tier:"Budget",name:"Milltek Sport Cat-Back",desc:"Bolt-on cat-back with a mild tone.",cost:700,hp:8,rel:0},
+        {tier:"Street",name:"AWE Tuning 3-inch Downpipe-Back",desc:"High-flow downpipe and full exhaust.",cost:1000,hp:13,rel:0},
+        {tier:"Race",name:"Full-Race 3-inch Header-Back",desc:"Straight-through race exhaust, max flow.",cost:1550,hp:20,rel:0}
+      ]},
+      {id:"cooling",name:"Intercooler",desc:"Charge air cooling",icon:"❄️",options:[
+        {tier:"Budget",name:"CSF OEM+ Intercooler",desc:"Direct-fit upgrade over the stock core.",cost:770,hp:5,rel:7},
+        {tier:"Street",name:"Wagner Tuning Competition Intercooler",desc:"Bar-and-plate core for stable charge temps.",cost:1100,hp:8,rel:6},
+        {tier:"Race",name:"Forge Motorsport Front-Mount Intercooler",desc:"Large front-mount core for sustained boost.",cost:1705,hp:12,rel:4}
+      ]}
+    ]
+  },
+  ps:{
+    name:"6.7 Powerstroke", family:"6.7L Turbo Diesel V8 (Ford)", baseHp:475, baseTq:1050, baseReliability:88, price:9100,
+    blurb:"Heavy-duty diesel torque monster.",
+    parts:[
+      {id:"short",name:"Bottom End / Girdle",desc:"Block strength for cylinder pressure",icon:"⚙️",options:[
+        {tier:"Budget",name:"Ford OEM Reman Long Block",desc:"Factory reman long block assembly.",cost:2808,hp:23,rel:15},
+        {tier:"Street",name:"Wagler Fabrication Street Main Girdle",desc:"Girdled main caps for added bottom-end strength.",cost:3900,hp:35,rel:9},
+        {tier:"Race",name:"Wagler Competition Billet Girdle + Carrillo Rods",desc:"Full billet girdle with forged rods.",cost:6435,hp:54,rel:4}
+      ]},
+      {id:"turbo",name:"Turbocharger",desc:"Forced induction hardware",icon:"🌀",options:[
+        {tier:"Budget",name:"Garrett PowerMax Stock-Replacement",desc:"Direct-fit factory-style turbo.",cost:3024,hp:50,rel:-5},
+        {tier:"Street",name:"KC Turbos Stage 2 Turbo",desc:"Bigger single turbo for more air.",cost:4200,hp:75,rel:-3},
+        {tier:"Race",name:"BorgWarner S467.7 Compound Kit",desc:"Compound turbo setup for massive airflow.",cost:6930,hp:116,rel:-1}
+      ]},
+      {id:"fuel",name:"Fuel System",desc:"Injectors & fuel delivery",icon:"⛽",options:[
+        {tier:"Budget",name:"Ford OEM Reman Injector Set",desc:"Factory-spec injector replacement.",cost:1872,hp:46,rel:-3},
+        {tier:"Street",name:"Full Force Diesel Stage 2 Injectors",desc:"Upgraded injectors for more fuel delivery.",cost:2600,hp:70,rel:-2},
+        {tier:"Race",name:"S&S Diesel 250% Over Injectors + CP3",desc:"Massive fuel delivery with a built CP3 pump.",cost:4290,hp:109,rel:-1}
+      ]},
+      {id:"intake",name:"Intake System",desc:"Airflow into the engine",icon:"🌬️",options:[
+        {tier:"Budget",name:"S&B Cold Air Intake",desc:"Direct-fit cold air kit.",cost:630,hp:15,rel:2},
+        {tier:"Street",name:"aFe Momentum HD Intake",desc:"High-flow heavy-duty intake system.",cost:900,hp:23,rel:2},
+        {tier:"Race",name:"Full Send Diesel Compound Intake Kit",desc:"Built for compound-turbo airflow demands.",cost:1395,hp:35,rel:1}
+      ]},
+      {id:"exhaust",name:"Exhaust System",desc:"Spent gas flow & tone",icon:"💨",options:[
+        {tier:"Budget",name:"MBRP 4-inch Turbo-Back",desc:"Straightforward turbo-back upgrade.",cost:1190,hp:18,rel:1},
+        {tier:"Street",name:"Diamond Eye 4-inch Cat-Delete",desc:"Reduced restriction, deeper tone.",cost:1700,hp:28,rel:1},
+        {tier:"Race",name:"Wehrli Custom Fab 5-inch Compound Exhaust",desc:"Built for compound turbo flow rates.",cost:2635,hp:42,rel:1}
+      ]},
+      {id:"cooling",name:"Intercooler",desc:"Charge air cooling",icon:"❄️",options:[
+        {tier:"Budget",name:"Mishimoto OEM-Style Intercooler",desc:"Direct-fit replacement core.",cost:1190,hp:12,rel:8},
+        {tier:"Street",name:"Bullet Proof Diesel Upgraded Intercooler",desc:"Larger core for lower IATs under load.",cost:1700,hp:18,rel:7},
+        {tier:"Race",name:"Wehrli Custom Fab Max-Flow Intercooler",desc:"Maximum core size for compound-turbo heat.",cost:2635,hp:27,rel:5}
+      ]},
+      {id:"trans",name:"Transmission",desc:"Power delivery to the wheels",icon:"🔗",options:[
+        {tier:"Budget",name:"Ford OEM TorqShift Reman",desc:"Factory reman transmission.",cost:3168,hp:0,rel:20},
+        {tier:"Street",name:"SunCoast Category 3 Transmission",desc:"Built transmission for moderate power gains.",cost:4400,hp:0,rel:12},
+        {tier:"Race",name:"SunCoast Category 5.5 Built Transmission",desc:"Heavy-duty build for big torque numbers.",cost:7260,hp:0,rel:5}
+      ]}
+    ]
+  },
+  jz:{
+    name:"2JZ-GTE", family:"3.0L Turbo I6 (Toyota Supra)", baseHp:280, baseTq:320, baseReliability:90, price:8200,
+    blurb:"Legendary inline-six platform for street and drag builds.",
+    parts:[
+      {id:"short",name:"Bottom End",desc:"Pistons, rods & crankshaft",icon:"⚙️",options:[
+        {tier:"Budget",name:"OEM Rebuild w/ ARP Head Studs",desc:"Factory internals with stronger clamping.",cost:2376,hp:20,rel:15},
+        {tier:"Street",name:"Brian Crower Forged Piston & Rod Set",desc:"Forged bottom end for street boost levels.",cost:3300,hp:30,rel:9},
+        {tier:"Race",name:"CP-Carrillo Competition Bottom End",desc:"Full competition-grade forged internals.",cost:5445,hp:47,rel:4}
+      ]},
+      {id:"head",name:"Cylinder Head",desc:"Valvetrain & port work",icon:"🔩",options:[
+        {tier:"Budget",name:"OEM Ported Head + Supertech Valves",desc:"Mild port work with upgraded valves.",cost:1470,hp:14,rel:5},
+        {tier:"Street",name:"Brian Crower Stage 2 Cams & Springs",desc:"Performance camshafts and valve springs.",cost:2100,hp:22,rel:4},
+        {tier:"Race",name:"CNC-Ported Head w/ Ferrea Valves",desc:"Fully ported head for max airflow.",cost:3255,hp:33,rel:3}
+      ]},
+      {id:"turbo",name:"Turbocharger",desc:"Forced induction hardware",icon:"🌀",options:[
+        {tier:"Budget",name:"Single T78 Hybrid Turbo",desc:"Budget big-single hybrid turbo.",cost:2232,hp:63,rel:-7},
+        {tier:"Street",name:"Garrett GTX3582R Gen2",desc:"Responsive ball-bearing single turbo.",cost:3100,hp:95,rel:-4},
+        {tier:"Race",name:"Precision Turbo PT6870 Next Gen",desc:"Big-frame turbo built for four-digit power.",cost:5115,hp:147,rel:-2}
+      ]},
+      {id:"fuel",name:"Fuel System",desc:"Injectors & fuel delivery",icon:"⛽",options:[
+        {tier:"Budget",name:"Injector Dynamics ID1050X + Walbro 450",desc:"Solid mid-power fueling upgrade.",cost:1944,hp:18,rel:-3},
+        {tier:"Street",name:"Injector Dynamics ID1700X + Triple Walbro",desc:"High-flow injectors with triple in-tank pumps.",cost:2700,hp:28,rel:-2},
+        {tier:"Race",name:"Fuel Injector Clinic 2150cc + Bosch E85 Kit",desc:"Max-flow fueling for E85 four-digit builds.",cost:4455,hp:43,rel:-1}
+      ]},
+      {id:"intake",name:"Intake Manifold",desc:"Airflow into the engine",icon:"🌬️",options:[
+        {tier:"Budget",name:"HKS Super Power Flow Intake",desc:"Classic open-element intake upgrade.",cost:840,hp:16,rel:2},
+        {tier:"Street",name:"GReddy Intake Manifold",desc:"Larger plenum for better top-end flow.",cost:1200,hp:24,rel:2},
+        {tier:"Race",name:"Full-Race / TiAL Velocity Stack ITBs",desc:"Individual throttle bodies for max response.",cost:1860,hp:36,rel:1}
+      ]},
+      {id:"exhaust",name:"Exhaust System",desc:"Spent gas flow & tone",icon:"💨",options:[
+        {tier:"Budget",name:"HKS Hi-Power Exhaust",desc:"Iconic cat-back with a mellow tone.",cost:980,hp:15,rel:0},
+        {tier:"Street",name:"Tomei Expreme Ti + Full-Race Downpipe",desc:"Titanium cat-back with a high-flow downpipe.",cost:1400,hp:23,rel:0},
+        {tier:"Race",name:"Full-Race Twin-Scroll Header + 4-inch Exhaust",desc:"Full header-back race exhaust.",cost:2170,hp:35,rel:0}
+      ]},
+      {id:"cooling",name:"Intercooler",desc:"Charge air cooling",icon:"❄️",options:[
+        {tier:"Budget",name:"Mishimoto Performance Intercooler",desc:"Direct-fit performance core.",cost:1050,hp:10,rel:8},
+        {tier:"Street",name:"HKS Intercooler Kit",desc:"Larger front-mount core and piping kit.",cost:1500,hp:15,rel:7},
+        {tier:"Race",name:"ETS Race Front-Mount Intercooler",desc:"Max-size core for sustained high boost.",cost:2325,hp:23,rel:5}
+      ]},
+      {id:"trans",name:"Transmission",desc:"Power delivery to the wheels",icon:"🔗",options:[
+        {tier:"Budget",name:"OEM Getrag V160 Rebuild",desc:"Factory 6-speed rebuild.",cost:2304,hp:0,rel:17},
+        {tier:"Street",name:"OS Giken Twin-Plate Clutch + OEM Box",desc:"Upgraded clutch for the stock gearbox.",cost:3200,hp:0,rel:10},
+        {tier:"Race",name:"PPG Sequential Dog Box",desc:"Full sequential gearbox for drag/road racing.",cost:5280,hp:0,rel:4}
+      ]}
+    ]
+  }
+};
+
+/* ---------------------------------------------------------------------
+   Engine assembly art. Each engine has a schematic SVG built from
+   per-part <g data-part="..."> groups. Groups start as dim, uncolored
+   "not installed" ghosts; installing a part reveals it and colors it
+   by tier (t0=Budget grey, t1=Street silver, t2=Race orange), and a
+   few groups swap in different hardware entirely at the Race tier
+   (compound turbo, velocity-stack intake, external fuel pump, etc).
+--------------------------------------------------------------------- */
+const ENGINE_ART = {
+  ea888:`<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg">
+    <ellipse class="ground-shadow" cx="195" cy="197" rx="150" ry="12" filter="url(#engineGroundBlur)"/>
+    <g filter="url(#engineDropShadow)">
+      <g class="vispart" data-part="exhaust">
+        <path class="chrome tier2-hide" d="M290,152 C330,160 350,168 385,178" fill="none" stroke-width="10" stroke-linecap="round"/>
+        <path class="chrome tier2-only" d="M290,150 C335,158 355,162 388,170" fill="none" stroke-width="14" stroke-linecap="round"/>
+        <ellipse class="m tier2-hide" cx="345" cy="172" rx="16" ry="9" stroke="#0d1116" stroke-width="1.5"/>
+        <g class="tier2-hide" opacity=".55">
+          <line x1="338" y1="164" x2="338" y2="180" stroke="#0d1116" stroke-width="1"/>
+          <line x1="345" y1="163" x2="345" y2="181" stroke="#0d1116" stroke-width="1"/>
+          <line x1="352" y1="164" x2="352" y2="180" stroke="#0d1116" stroke-width="1"/>
+        </g>
+      </g>
+      <g class="vispart" data-part="cooling">
+        <rect class="m" x="38" y="148" width="72" height="32" rx="6" stroke="#0d1116" stroke-width="1.5"/>
+        <line x1="47" y1="151" x2="47" y2="177" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="55" y1="151" x2="55" y2="177" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="63" y1="151" x2="63" y2="177" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="71" y1="151" x2="71" y2="177" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="79" y1="151" x2="79" y2="177" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="87" y1="151" x2="87" y2="177" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="95" y1="151" x2="95" y2="177" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="103" y1="151" x2="103" y2="177" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <circle class="rad2" cx="46" cy="164" r="9" stroke="#0d1116" stroke-width="1.5"/>
+        <circle class="rad2" cx="102" cy="164" r="9" stroke="#0d1116" stroke-width="1.5"/>
+        <path class="hoseline" d="M102,158 C160,140 220,150 265,148" stroke-width="6"/>
+        <path class="hoseline" d="M70,148 C80,110 95,85 110,72" stroke-width="6"/>
+        <rect class="clamp" x="98" y="154" width="7" height="7" rx="1.5"/>
+        <rect class="clamp" x="67" y="144" width="7" height="7" rx="1.5"/>
+      </g>
+      <g class="vispart" data-part="turbo">
+        <circle class="rad2 tier2-only" cx="266" cy="168" r="15" stroke="#0d1116" stroke-width="1.5"/>
+        <circle class="rad2" cx="280" cy="152" r="21" stroke="#0d1116" stroke-width="1.5"/>
+        <circle class="rad" cx="292" cy="169" r="6" stroke="#0d1116" stroke-width="1"/>
+        <circle class="rad" cx="305" cy="150" r="27" stroke="#0d1116" stroke-width="1.5"/>
+        <path class="hi" d="M300,125 a26,26 0 0,1 22,45" stroke-width="2"/>
+        <circle class="cavity" cx="305" cy="150" r="10"/>
+        <circle cx="305" cy="150" r="10" fill="none" stroke="#0d1116" stroke-width="1"/>
+        <rect class="rad2" x="296" y="121" width="10" height="19" rx="3" stroke="#0d1116" stroke-width="1.5"/>
+        <line x1="301" y1="121" x2="301" y2="111" stroke="#6b7580" stroke-width="2"/>
+      </g>
+      <g class="vispart" data-part="fuel">
+        <rect class="m" x="150" y="52" width="86" height="7" rx="3" stroke="#0d1116" stroke-width="1.5"/>
+        <rect x="160" y="59" width="6" height="14" rx="1" class="flat2"/>
+        <rect x="182" y="59" width="6" height="14" rx="1" class="flat2"/>
+        <rect x="204" y="59" width="6" height="14" rx="1" class="flat2"/>
+        <rect x="222" y="59" width="6" height="14" rx="1" class="flat2"/>
+        <rect class="m tier2-only" x="112" y="140" width="20" height="34" rx="4" stroke="#0d1116" stroke-width="1.5"/>
+        <line class="tier2-only" x1="132" y1="150" x2="150" y2="150" stroke="#454e58" stroke-width="4"/>
+      </g>
+      <g class="vispart" data-part="short">
+        <rect class="m" x="132" y="92" width="108" height="88" rx="12" stroke="#0d1116" stroke-width="1.5"/>
+        <line x1="186" y1="97" x2="186" y2="176" stroke="#0d1116" stroke-opacity=".3" stroke-width="2"/>
+        <rect class="m2" x="150" y="150" width="72" height="26" rx="8" stroke="#0d1116" stroke-width="1.5"/>
+        <circle class="cavity" cx="186" cy="163" r="3"/>
+        <circle class="flat1" cx="140" cy="100" r="2.5"/><circle class="flat1" cx="232" cy="100" r="2.5"/>
+        <circle class="flat1" cx="140" cy="172" r="2.5"/><circle class="flat1" cx="232" cy="172" r="2.5"/>
+      </g>
+      <g class="vispart" data-part="head">
+        <rect class="m" x="126" y="58" width="120" height="38" rx="9" stroke="#0d1116" stroke-width="1.5"/>
+        <rect x="134" y="63" width="104" height="4.5" rx="2.25" class="flat2" opacity=".55"/>
+        <rect x="134" y="72" width="104" height="4.5" rx="2.25" class="flat2" opacity=".55"/>
+        <rect x="134" y="81" width="104" height="4.5" rx="2.25" class="flat2" opacity=".55"/>
+        <circle cx="228" cy="66" r="4.5" class="flat1" stroke="#0d1116" stroke-width="1"/>
+        <circle cx="146" cy="58" r="5" class="flat1"/><circle cx="176" cy="58" r="5" class="flat1"/>
+        <circle cx="206" cy="58" r="5" class="flat1"/><circle cx="236" cy="58" r="5" class="flat1"/>
+      </g>
+      <g class="vispart" data-part="intake">
+        <g class="tier2-hide">
+          <circle class="rad" cx="72" cy="72" r="19" stroke="#0d1116" stroke-width="1.5"/>
+          <circle cx="72" cy="72" r="13" fill="none" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+          <circle cx="72" cy="72" r="7" fill="none" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+          <path class="hoseline" d="M90,72 L126,74" stroke-width="8"/>
+          <rect class="clamp" x="121" y="70.5" width="7" height="7" rx="1.5"/>
+        </g>
+        <g class="tier2-only">
+          <path class="m" d="M138,58 q4,-16 8,-16 q4,0 8,16 Z" stroke="#0d1116" stroke-width="1.5"/>
+          <path class="m" d="M162,58 q4,-16 8,-16 q4,0 8,16 Z" stroke="#0d1116" stroke-width="1.5"/>
+          <path class="m" d="M186,58 q4,-16 8,-16 q4,0 8,16 Z" stroke="#0d1116" stroke-width="1.5"/>
+          <path class="m" d="M210,58 q4,-16 8,-16 q4,0 8,16 Z" stroke="#0d1116" stroke-width="1.5"/>
+        </g>
+      </g>
+    </g>
+  </svg>`,
+  ps:`<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg">
+    <ellipse class="ground-shadow" cx="195" cy="197" rx="165" ry="13" filter="url(#engineGroundBlur)"/>
+    <g filter="url(#engineDropShadow)">
+      <g class="vispart" data-part="exhaust">
+        <path class="chrome tier2-hide" d="M270,150 C310,165 335,172 380,182" fill="none" stroke-width="12" stroke-linecap="round"/>
+        <path class="chrome tier2-only" d="M270,148 C315,162 340,166 383,176" fill="none" stroke-width="17" stroke-linecap="round"/>
+      </g>
+      <g class="vispart" data-part="cooling">
+        <rect class="m" x="26" y="150" width="92" height="36" rx="6" stroke="#0d1116" stroke-width="1.5"/>
+        <line x1="36" y1="153" x2="36" y2="183" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="45" y1="153" x2="45" y2="183" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="54" y1="153" x2="54" y2="183" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="63" y1="153" x2="63" y2="183" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="72" y1="153" x2="72" y2="183" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="81" y1="153" x2="81" y2="183" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="90" y1="153" x2="90" y2="183" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="99" y1="153" x2="99" y2="183" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="108" y1="153" x2="108" y2="183" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <circle class="rad2" cx="36" cy="168" r="10" stroke="#0d1116" stroke-width="1.5"/>
+        <circle class="rad2" cx="108" cy="168" r="10" stroke="#0d1116" stroke-width="1.5"/>
+        <path class="hoseline" d="M108,160 C170,142 210,148 240,150" stroke-width="7"/>
+        <rect class="clamp" x="105" y="156" width="7" height="7" rx="1.5"/>
+      </g>
+      <g class="vispart" data-part="turbo">
+        <circle class="rad2 tier2-only" cx="222" cy="120" r="17" stroke="#0d1116" stroke-width="1.5"/>
+        <circle class="rad" cx="200" cy="98" r="24" stroke="#0d1116" stroke-width="1.5"/>
+        <path class="hi" d="M195,76 a23,23 0 0,1 20,40" stroke-width="2"/>
+        <circle class="cavity" cx="200" cy="98" r="9"/>
+        <circle cx="200" cy="98" r="9" fill="none" stroke="#0d1116" stroke-width="1"/>
+      </g>
+      <g class="vispart" data-part="fuel">
+        <rect class="m" x="160" y="86" width="80" height="8" rx="3" stroke="#0d1116" stroke-width="1.5"/>
+        <rect class="m tier2-only" x="86" y="150" width="22" height="36" rx="4" stroke="#0d1116" stroke-width="1.5"/>
+        <line class="tier2-only" x1="108" y1="164" x2="128" y2="158" stroke="#454e58" stroke-width="4"/>
+      </g>
+      <g class="vispart" data-part="intake">
+        <g class="tier2-hide">
+          <rect class="m" x="34" y="66" width="52" height="30" rx="6" stroke="#0d1116" stroke-width="1.5"/>
+          <path class="hoseline" d="M86,80 C130,72 165,78 188,86" stroke-width="8"/>
+        </g>
+        <g class="tier2-only">
+          <rect class="m" x="28" y="58" width="62" height="40" rx="6" stroke="#0d1116" stroke-width="1.5"/>
+          <path class="hoseline" d="M90,78 C130,66 165,76 188,84" stroke-width="11"/>
+        </g>
+      </g>
+      <g class="vispart" data-part="short">
+        <rect class="m" x="108" y="120" width="182" height="66" rx="12" stroke="#0d1116" stroke-width="1.5"/>
+        <path class="m2" d="M120,120 L195,76 L205,76 L280,120 Z" stroke="#0d1116" stroke-width="1.25"/>
+        <line x1="199" y1="120" x2="199" y2="184" stroke="#0d1116" stroke-opacity=".25" stroke-width="2"/>
+        <circle class="flat1" cx="118" cy="128" r="2.5"/><circle class="flat1" cx="280" cy="128" r="2.5"/>
+        <circle class="flat1" cx="118" cy="178" r="2.5"/><circle class="flat1" cx="280" cy="178" r="2.5"/>
+      </g>
+      <g class="vispart" data-part="trans">
+        <circle class="rad" cx="308" cy="154" r="30" stroke="#0d1116" stroke-width="1.5"/>
+        <circle cx="308" cy="154" r="30" fill="none" stroke="#0d1116" stroke-opacity=".25" stroke-width="1" stroke-dasharray="3 4"/>
+        <rect class="m2" x="284" y="140" width="20" height="28" rx="4" stroke="#0d1116" stroke-width="1.5"/>
+        <circle class="cavity" cx="308" cy="154" r="7"/>
+      </g>
+    </g>
+  </svg>`,
+  jz:`<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg">
+    <ellipse class="ground-shadow" cx="200" cy="195" rx="175" ry="12" filter="url(#engineGroundBlur)"/>
+    <g filter="url(#engineDropShadow)">
+      <g class="vispart" data-part="exhaust">
+        <path class="chrome tier2-hide" d="M330,150 C355,158 370,164 390,172" fill="none" stroke-width="10" stroke-linecap="round"/>
+        <path class="chrome tier2-only" d="M330,148 C358,156 372,160 392,166" fill="none" stroke-width="14" stroke-linecap="round"/>
+      </g>
+      <g class="vispart" data-part="cooling">
+        <rect class="m" x="18" y="152" width="70" height="30" rx="6" stroke="#0d1116" stroke-width="1.5"/>
+        <line x1="26" y1="155" x2="26" y2="179" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="34" y1="155" x2="34" y2="179" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="42" y1="155" x2="42" y2="179" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="50" y1="155" x2="50" y2="179" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="58" y1="155" x2="58" y2="179" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="66" y1="155" x2="66" y2="179" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="74" y1="155" x2="74" y2="179" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <line x1="82" y1="155" x2="82" y2="179" stroke="#0d1116" stroke-opacity=".3" stroke-width="1.5"/>
+        <circle class="rad2" cx="26" cy="167" r="8" stroke="#0d1116" stroke-width="1.5"/>
+        <circle class="rad2" cx="80" cy="167" r="8" stroke="#0d1116" stroke-width="1.5"/>
+        <path class="hoseline" d="M80,160 C160,144 260,150 300,150" stroke-width="5"/>
+      </g>
+      <g class="vispart" data-part="turbo">
+        <circle class="rad2" cx="312" cy="140" r="23" stroke="#0d1116" stroke-width="1.5"/>
+        <circle class="rad" cx="335" cy="138" r="29" stroke="#0d1116" stroke-width="1.5"/>
+        <path class="hi" d="M330,113 a28,28 0 0,1 24,48" stroke-width="2"/>
+        <circle class="cavity" cx="335" cy="138" r="11"/>
+        <circle cx="335" cy="138" r="11" fill="none" stroke="#0d1116" stroke-width="1"/>
+      </g>
+      <g class="vispart" data-part="fuel">
+        <rect class="m" x="100" y="58" width="200" height="7" rx="3" stroke="#0d1116" stroke-width="1.5"/>
+        <rect x="115" y="65" width="5" height="10" class="flat2"/><rect x="150" y="65" width="5" height="10" class="flat2"/>
+        <rect x="185" y="65" width="5" height="10" class="flat2"/><rect x="220" y="65" width="5" height="10" class="flat2"/>
+        <rect x="255" y="65" width="5" height="10" class="flat2"/><rect x="280" y="65" width="5" height="10" class="flat2"/>
+        <rect class="m tier2-only" x="56" y="150" width="20" height="32" rx="4" stroke="#0d1116" stroke-width="1.5"/>
+      </g>
+      <g class="vispart" data-part="short">
+        <rect class="m" x="78" y="92" width="232" height="70" rx="12" stroke="#0d1116" stroke-width="1.5"/>
+        <circle class="flat1" cx="90" cy="100" r="2.5"/><circle class="flat1" cx="298" cy="100" r="2.5"/>
+        <circle class="flat1" cx="90" cy="154" r="2.5"/><circle class="flat1" cx="298" cy="154" r="2.5"/>
+      </g>
+      <g class="vispart" data-part="head">
+        <rect class="m" x="74" y="60" width="240" height="34" rx="8" stroke="#0d1116" stroke-width="1.5"/>
+        <rect x="82" y="65" width="224" height="4" rx="2" class="flat2" opacity=".55"/>
+        <rect x="82" y="73" width="224" height="4" rx="2" class="flat2" opacity=".55"/>
+        <circle cx="93" cy="60" r="5" class="flat1"/><circle cx="128" cy="60" r="5" class="flat1"/><circle cx="163" cy="60" r="5" class="flat1"/>
+        <circle cx="198" cy="60" r="5" class="flat1"/><circle cx="233" cy="60" r="5" class="flat1"/><circle cx="268" cy="60" r="5" class="flat1"/>
+      </g>
+      <g class="vispart" data-part="intake">
+        <g class="tier2-hide"><rect class="m" x="38" y="70" width="46" height="24" rx="6" stroke="#0d1116" stroke-width="1.5"/></g>
+        <g class="tier2-only">
+          <path class="m" d="M88,60 q4,-15 8,-15 q4,0 8,15 Z" stroke="#0d1116" stroke-width="1.5"/>
+          <path class="m" d="M110,60 q4,-15 8,-15 q4,0 8,15 Z" stroke="#0d1116" stroke-width="1.5"/>
+          <path class="m" d="M132,60 q4,-15 8,-15 q4,0 8,15 Z" stroke="#0d1116" stroke-width="1.5"/>
+        </g>
+      </g>
+      <g class="vispart" data-part="trans">
+        <circle class="rad" cx="58" cy="136" r="26" stroke="#0d1116" stroke-width="1.5"/>
+        <circle cx="58" cy="136" r="26" fill="none" stroke="#0d1116" stroke-opacity=".25" stroke-width="1" stroke-dasharray="3 4"/>
+        <rect class="m2" x="70" y="122" width="18" height="28" rx="4" stroke="#0d1116" stroke-width="1.5"/>
+        <circle class="cavity" cx="58" cy="136" r="6"/>
+      </g>
+    </g>
+  </svg>`
+};
+
+function paintEngineArt(hostId){
+  const host=document.getElementById(hostId); if(!host)return;
+  if(!state.engine){host.innerHTML='<div class="sub" style="text-align:center;padding:60px 10px">No engine selected yet. Pick a platform on the Engines tab.</div>';host.dataset.engine='';return}
+  if(host.dataset.engine!==state.engine){host.innerHTML=ENGINE_ART[state.engine];host.dataset.engine=state.engine}
+  const e=ENGINE_DATA[state.engine];
+  e.parts.forEach(p=>{
+    const g=host.querySelector(`[data-part="${p.id}"]`); if(!g)return;
+    const idx=state.installed[p.id];
+    g.classList.remove('on','t0','t1','t2');
+    if(idx!==undefined) g.classList.add('on','t'+idx);
+  });
+}
+
+let state = {
+  cash:25000, engine:null, installed:{}, tune:{fuel:50,boost:50,timing:50,econ:false},
+  assembled:false, spent:0, dyno:[], lastRun:null, jobCount:0, jobCooldowns:{}
+};
+
+const money = n => "$" + Math.round(n).toLocaleString();
+function save(){ try{ localStorage.setItem("engineBuilderState",JSON.stringify(state)); }catch(e){} }
+function load(){
+  try{ const s=JSON.parse(localStorage.getItem("engineBuilderState")); if(s) state={...state,...s, tune:{...state.tune,...(s.tune||{})}, jobCooldowns:{...(s.jobCooldowns||{})}}; }catch(e){}
+}
+function toast(t){const el=document.getElementById("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("show"),1700)}
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===id));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.screen===id));
+  if(id==="build")renderBuild(); if(id==="dyno")renderDyno(); if(id==="garage")renderGarage(); if(id==="career")renderCareer();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showScreen(t.dataset.screen));
+
+function selectEngine(key){
+  const e=ENGINE_DATA[key];
+  if(state.engine && state.engine!==key){ if(!confirm("Start a new engine project? Your current build will be replaced."))return; }
+  state.engine=key; state.installed={}; state.assembled=false; state.spent=e.price; state.cash=Math.max(0,25000-e.price); state.dyno=[]; state.lastRun=null;
+  save(); renderAll(); showScreen("build"); toast(e.name+" selected");
+}
+function resetBuild(){
+  if(!state.engine)return;
+  const e=ENGINE_DATA[state.engine]; state.cash=25000-e.price;state.installed={};state.spent=e.price;state.assembled=false;state.dyno=[];state.lastRun=null;save();renderAll();toast("Build reset");
+}
+
+function getPartOptions(part){
+  return part.options.map((o,i)=>({...o,index:i}));
+}
+let pendingPartId=null;
+function openChoice(id){
+  if(!state.engine)return;
+  const part=ENGINE_DATA[state.engine].parts.find(p=>p.id===id); if(!part)return;
+  pendingPartId=id;
+  const current=state.installed[id];
+  document.getElementById('choiceTitle').textContent=part.name;
+  document.getElementById('choiceSub').textContent=part.desc+" — pick a tier and brand.";
+  const wrap=document.getElementById('choiceOptions');wrap.innerHTML='';
+  getPartOptions(part).forEach(o=>{
+    const d=document.createElement('div'); d.className='option';
+    d.innerHTML=`<div><strong>${o.name} <span class="tag">${o.tier}</span></strong><small>${o.desc}</small><small>+${o.hp} hp • ${o.rel>=0?'+':''}${o.rel} reliability</small></div><div style="text-align:right"><strong>${money(o.cost)}</strong><button class="btn small ${current===o.index?"good":""}" onclick="choosePart('${id}',${o.index})">${current===o.index?'Installed':'Install'}</button></div>`;
+    wrap.appendChild(d);
+  });
+  document.getElementById('choiceModal').classList.add('open');
+}
+function closeChoice(){document.getElementById('choiceModal').classList.remove('open');pendingPartId=null}
+function choosePart(id,index){
+  const e=ENGINE_DATA[state.engine], part=e.parts.find(p=>p.id===id); if(!part)return;
+  const opts=getPartOptions(part), o=opts[index], cur=state.installed[id];
+  const refund=cur===undefined?0:opts[cur].cost;
+  const delta=o.cost-refund;
+  if(delta>0 && state.cash<delta){toast('Not enough cash for that option');return}
+  state.cash-=delta; state.spent+=delta; state.installed[id]=index; state.assembled=false; save(); closeChoice(); renderAll(); toast(`Installed: ${o.name}`);
+}
+function installPart(id){ openChoice(id); }
+
+function buildStats(){
+  if(!state.engine)return {hp:0,tq:0,rel:0,val:0,progress:0};
+  const e=ENGINE_DATA[state.engine];
+  let hp=e.baseHp, rel=e.baseReliability, val=e.price, installedCount=0;
+  for(const p of e.parts){
+    if(state.installed[p.id]!==undefined){
+      const o=getPartOptions(p)[state.installed[p.id]]; hp+=o.hp; rel+=o.rel; val+=o.cost; installedCount++;
+    }
+  }
+  const t=state.tune;
+  const aggression=((t.fuel+t.boost+t.timing)/3-50)/50;
+  hp*=1+(aggression*0.22); rel-=Math.max(0,aggression*12);
+  if(t.econ){hp*=.94;rel+=8}
+  rel=Math.max(15,Math.min(99,rel)); hp=Math.round(hp);
+  let tq=Math.round(e.baseTq*(hp/e.baseHp)*(state.engine==="ps"?1.06:1.0));
+  const progress=Math.round(installedCount/e.parts.length*100);
+  return {hp,tq,rel:Math.round(rel),val,progress};
+}
+
+function renderHome(){
+  const g=document.getElementById("engineGrid");g.innerHTML="";
+  Object.entries(ENGINE_DATA).forEach(([key,e])=>{
+    const div=document.createElement("div");div.className="card engine-card"+(state.engine===key?" selected":"");
+    div.onclick=()=>selectEngine(key);
+    div.innerHTML=`<div><div class="engine-icon enginePreview">${ENGINE_ART[key]}</div><div class="engine-name">${e.name}</div><div class="engine-meta">${e.family}</div></div>
+      <div class="stats"><div class="stat"><b>${e.baseHp} hp</b><span>STOCK POWER</span></div><div class="stat"><b>${money(e.price)}</b><span>BASE COST</span></div></div>`;
+    g.appendChild(div);
+  });
+}
+function renderBuild(){
+  if(!state.engine){showScreen("home");return}
+  const e=ENGINE_DATA[state.engine], s=buildStats();
+  document.getElementById("buildTitle").textContent=e.name+" build";
+  document.getElementById("buildSub").textContent=e.family+" • "+e.blurb;
+  document.getElementById("hpOut").textContent=s.hp+" hp";
+  document.getElementById("tqOut").textContent=s.tq+" lb-ft";
+  document.getElementById("relOut").textContent=s.rel+"/100";
+  document.getElementById("valOut").textContent=money(s.val);
+  document.getElementById("progressBar").style.width=s.progress+"%";
+  document.getElementById("progressText").textContent=s.progress+"% of listed components installed";
+  document.getElementById("finishBtn").disabled=s.progress<50 || state.assembled;
+  document.getElementById("finishBtn").textContent=state.assembled?"Engine assembled ✓":"Assemble engine";
+  document.getElementById("assemblyNote").textContent=state.assembled?"Built and ready for dyno.":(s.progress===0?"Start installing parts below — the model builds itself as you go.":s.progress+"% built — keep going.");
+  document.getElementById("cash").textContent=money(state.cash);
+  paintEngineArt('engineArt');
+  const wrap=document.getElementById("parts");wrap.innerHTML="";
+  e.parts.forEach(p=>{
+    const cur=state.installed[p.id];
+    const opts=getPartOptions(p);
+    const selected=cur!==undefined?opts[cur]:null;
+    const div=document.createElement("div");div.className="card part-card";
+    div.style.display="block";
+    div.innerHTML=`<div class="part"><div class="part-icon">${p.icon}</div><div class="part-info"><div class="part-name">${p.name}</div><div class="part-desc">${p.desc}</div>${selected?`<div class="installed-tag"><b>${selected.tier}</b> ${selected.name}</div>`:''}</div><button class="btn small ${selected?"good":""}" onclick="openChoice('${p.id}')">${selected?selected.tier:'Choose'}</button></div>
+      <div class="choice-wrap"><div class="choice-grid">${opts.map(o=>`<div class="choice ${cur===o.index?'selected':''}" onclick="openChoice('${p.id}')">${o.tier}<small>${money(o.cost)}</small></div>`).join('')}</div></div>`;
+    wrap.appendChild(div);
+  });
+}
+function finishBuild(){
+  const s=buildStats();
+  if(s.progress<50){toast("Install at least 50% of components");return}
+  state.assembled=true;save();renderAll();toast("Engine assembled!");
+  showScreen("dyno");
+}
+function openTune(){
+  if(!state.engine){toast("Choose an engine first");return}
+  document.getElementById("fuel").value=state.tune.fuel;document.getElementById("boost").value=state.tune.boost;document.getElementById("timing").value=state.tune.timing;document.getElementById("econ").checked=state.tune.econ;syncTune();
+  document.getElementById("tuneModal").classList.add("open");
+}
+function closeTune(){document.getElementById("tuneModal").classList.remove("open")}
+function syncTune(){
+  const f=+document.getElementById("fuel").value,b=+document.getElementById("boost").value,t=+document.getElementById("timing").value,e=document.getElementById("econ").checked;
+  document.getElementById("fuelVal").textContent=f+"%";document.getElementById("boostVal").textContent=b+"%";document.getElementById("timingVal").textContent=t+"%";
+  if(e){
+    // visually cap only; actual values get capped on save
+  }
+}
+function saveTune(){
+  let f=+document.getElementById("fuel").value,b=+document.getElementById("boost").value,t=+document.getElementById("timing").value,e=document.getElementById("econ").checked;
+  if(e){f=Math.min(f,65);b=Math.min(b,65);t=Math.min(t,65)}
+  state.tune={fuel:f,boost:b,timing:t,econ:e};save();closeTune();renderAll();toast("Tune saved");
+}
+function runDyno(){
+  if(!state.engine){toast("Choose an engine first");return}
+  if(!state.assembled){toast("Assemble the engine first");showScreen("build");return}
+  const s=buildStats(), t=state.tune;
+  const stress=((t.fuel+t.boost+t.timing)/3);
+  const danger=Math.max(0,(stress-68)/32);
+  const failure=Math.min(.46,danger*.58 + (100-s.rel)/220);
+  const failed=Math.random()<failure;
+  let hp=s.hp,tq=s.tq,score=Math.round((hp/10)+s.rel*.55+s.progress*0.7);
+  if(failed){hp=Math.round(hp*(.55+Math.random()*.2));tq=Math.round(tq*(.6+Math.random()*.15));score=Math.max(5,score-25)}
+  const boost=state.engine==="ps"?Math.round(22+(t.boost*.24)):Math.round(8+(t.boost*.32));
+  const run={time:new Date().toLocaleTimeString(),hp,tq,boost,score,failed};state.lastRun=run;state.dyno.push(run);if(state.dyno.length>8)state.dyno.shift();save();renderDyno();
+  toast(failed?"Dyno pull failed — too much stress":"Clean dyno pull: "+hp+" hp");
+}
+function renderDyno(){
+  const r=state.lastRun;
+  document.getElementById("dynoHp").textContent=r?r.hp+" hp":"—";
+  document.getElementById("dynoTq").textContent=r?r.tq+" lb-ft":"—";
+  document.getElementById("boostOut").textContent=r?r.boost+(state.engine==="ps"?"% load":" psi"):"—";
+  document.getElementById("scoreOut").textContent=r?r.score:"—";
+  const log=document.getElementById("dynoLog");log.innerHTML="";
+  if(!state.dyno.length){log.innerHTML='<div class="muted">No pulls yet.</div>'}
+  else [...state.dyno].reverse().forEach(x=>{const d=document.createElement("div");d.className=x.failed?"red":"green";d.textContent=`[${x.time}] ${x.failed?"FAIL":"PASS"}  ${x.hp} hp  ${x.tq} lb-ft  score ${x.score}`;log.appendChild(d)});
+  drawChart();
+}
+function drawChart(){
+  const c=document.getElementById("chart"),ctx=c.getContext("2d"),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle="#2a3540";ctx.lineWidth=1;
+  for(let x=0;x<w;x+=70){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+  for(let y=0;y<h;y+=55){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  if(!state.lastRun)return;
+  const hp=state.lastRun.hp,tq=state.lastRun.tq;
+  ctx.lineWidth=5;ctx.strokeStyle="#ff6b1a";ctx.beginPath();
+  for(let i=0;i<=100;i++){const x=20+i*(w-40)/100;const factor=Math.sin((i/100)*Math.PI*.95)*(.82+.12*Math.sin(i/11));const y= h-25-factor*(h-70)*(hp/Math.max(hp,700));if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+  ctx.lineWidth=3;ctx.strokeStyle="#8aa1b5";ctx.beginPath();
+  for(let i=0;i<=100;i++){const x=20+i*(w-40)/100;const factor=Math.sin((i/100)*Math.PI*.9)*(.65+.08*Math.sin(i/14));const y=h-25-factor*(h-70)*(tq/Math.max(tq,1200));if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+  ctx.fillStyle="#ff6b1a";ctx.font="bold 13px system-ui";ctx.fillText("HP",w-55,25);ctx.fillStyle="#8aa1b5";ctx.fillText("TQ",w-55,45);
+}
+function renderGarage(){
+  const e=state.engine?ENGINE_DATA[state.engine]:null,s=state.engine?buildStats():{progress:0};
+  document.getElementById("garageEngine").textContent=e?e.name:"None";
+  document.getElementById("garageBar").style.width=s.progress+"%";
+  document.getElementById("garageProgress").textContent=s.progress+"% assembled";
+  document.getElementById("garageSpent").textContent=money(state.spent)+" spent";
+  paintEngineArt('engineArtGarage');
+}
+
+const JOBS=[
+ {id:'oil',icon:'🛢️',name:'Oil change & inspection',desc:'Learn the basics: lubrication, levels, leaks and inspection.',reward:900,need:0,
+  steps:[
+   {q:'Before draining the oil, what is the main reason to let the engine warm slightly?',ctx:'Warm oil flows more easily and carries suspended contaminants with it.',opts:['To make the oil thicker','To help the oil drain completely','To increase battery voltage','To raise tire pressure'],a:1,tip:'Correct. Slightly warm oil flows better, helping you remove more of the old oil.'},
+   {q:'After installing the new filter and drain plug, what should you verify before driving away?',ctx:'A good technician checks the basics instead of assuming the job is finished.',opts:['Oil level and leaks','Horn volume only','Window tint','Radio presets'],a:0,tip:'Exactly. Check the correct oil level and inspect for leaks around the filter and drain plug.'},
+   {q:'What does engine oil mainly do?',ctx:'Think beyond “making things slippery.”',opts:['Lubricate, cool and carry contaminants','Increase tire grip','Charge the battery','Control wheel alignment'],a:0,tip:'Correct. Engine oil reduces friction and also helps move heat and contaminants through the lubrication system.'}
+  ]},
+ {id:'tune',icon:'🧪',name:'Street tune session',desc:'Learn how airflow, fueling and timing work together.',reward:1500,need:2,
+  steps:[
+   {q:'You add more boost but do not add enough fuel. What is the basic concern?',ctx:'A turbo can push more air into the engine, but combustion still needs the right amount of fuel.',opts:['The mixture can become too lean','The tires get wider','Oil pressure always doubles','The engine gains reliability automatically'],a:0,tip:'Right. More air without enough fuel can create an unhealthy mixture and excessive heat.'},
+   {q:'Why is timing usually the last knob you should aggressively push?',ctx:'Timing can make power, but the safe window depends on the rest of the setup and conditions.',opts:['It has no effect on power','Too much timing can raise stress and knock risk','Timing changes tire size','Timing only affects headlights'],a:1,tip:'Correct. Timing is powerful, but pushing it too far can increase combustion stress and knock risk.'},
+   {q:'For a first street tune, which approach makes the most sense?',ctx:'You are starting with an unknown combination of parts.',opts:['Max every slider immediately','Start moderate, make one change at a time, then dyno test','Set everything to zero forever','Ignore reliability'],a:1,tip:'Exactly. Moderate settings and controlled changes make it easier to understand what each adjustment does.'}
+  ]},
+ {id:'turbo',icon:'🌀',name:'Turbo install',desc:'Learn compressor airflow, boost response and heat management.',reward:2400,need:4,
+  steps:[
+   {q:'What happens when a turbo compressor moves more air into the engine?',ctx:'More air can support more fuel and power when the engine can handle it.',opts:['Potential power increases','The engine automatically becomes stock','Fuel is no longer needed','The transmission disappears'],a:0,tip:'Correct. More airflow can support more power, but the rest of the system needs to keep up.'},
+   {q:'Why is an intercooler valuable on a boosted build?',ctx:'Compressed air gets hotter.',opts:['It cools charge air','It increases tire pressure','It replaces engine oil','It shortens the crankshaft'],a:0,tip:'Exactly. Cooler charge air is denser and helps manage intake temperatures.'},
+   {q:'A huge turbo can make great peak power but feel lazy at low rpm. Why?',ctx:'Turbo size affects airflow capacity and response.',opts:['Larger turbos can take more exhaust energy to spool','Large turbos remove the camshaft','Large turbos reduce fuel tank size','It is unrelated to turbo size'],a:0,tip:'Correct. Bigger airflow capability often comes with slower response, especially at low rpm.'}
+  ]},
+ {id:'built',icon:'🔧',name:'Built engine commission',desc:'Learn why strength, airflow and supporting systems matter together.',reward:3800,need:7,
+  steps:[
+   {q:'Why upgrade rods and pistons on a high-power build?',ctx:'Cylinder pressure rises as power rises.',opts:['To handle higher loads','To make the windshield darker','To lower octane requirements automatically','To increase wheel alignment'],a:0,tip:'Correct. Stronger internals give the engine more headroom under higher loads.'},
+   {q:'Why is a high-power fuel system upgrade often paired with more airflow?',ctx:'The engine needs both air and fuel to make more power.',opts:['The systems must support the same power target','Fuel systems cool the tires','Airflow eliminates the need for fuel','They are completely unrelated'],a:0,tip:'Exactly. Power is a system-level problem: airflow, fuel and combustion have to work together.'},
+   {q:'You have a strong bottom end but poor cooling. What is the smart lesson?',ctx:'One strong component cannot fix every system weakness.',opts:['Supporting systems still matter','Cooling is never important','The bottom end makes unlimited power','Dyno results no longer matter'],a:0,tip:'Right. Strength, cooling, fueling and airflow all contribute to a durable combination.'}
+  ]},
+ {id:'race',icon:'🏁',name:'Race-weekend support',desc:'Learn how to balance peak power, repeatability and mechanical sympathy.',reward:5600,need:10,
+  steps:[
+   {q:'Why might a slightly slower tune be better for a full race weekend?',ctx:'A car may need repeated pulls or runs, not one hero pass.',opts:['Consistency and reliability matter','Slower always wins','Power has no effect on racing','Reliability is cosmetic'],a:0,tip:'Correct. A repeatable setup can be more valuable than a risky peak number.'},
+   {q:'After a dyno pull, what is a useful thing to compare?',ctx:'The dyno gives you more than a single horsepower number.',opts:['Power curve and conditions/logs','Paint color only','Seat position only','License plate letters'],a:0,tip:'Exactly. The shape of the power curve and the conditions help explain how the result was achieved.'},
+   {q:'What is the best general strategy when chasing the next power level?',ctx:'Think like a builder, not just a number chaser.',opts:['Make the supporting system capable before adding stress','Always max boost first','Ignore temperatures','Change everything at once'],a:0,tip:'Correct. Build the supporting systems and make controlled changes so you know what caused the result.'}
+  ]}
+];
+let activeJob=null, jobStep=0, jobScore=0, jobAnswered=false;
+function doJob(job){
+  if(state.jobCooldowns[job.id]){toast('That job is cooling down');return}
+  if(state.jobCount<job.need){toast(`Need ${job.need} completed jobs`);return}
+  activeJob=job; jobStep=0; jobScore=0; jobAnswered=false;
+  document.getElementById('jobModal').classList.add('open'); renderJobStep();
+}
+function closeJob(){document.getElementById('jobModal').classList.remove('open');activeJob=null}
+function answerJob(i){
+  if(jobAnswered)return; jobAnswered=true;
+  const step=activeJob.steps[jobStep];
+  const opts=document.querySelectorAll('.lesson-option');opts[i].classList.add(i===step.a?'correct':'wrong');
+  if(i===step.a){jobScore++;document.getElementById('jobLesson').insertAdjacentHTML('beforeend',`<div class="lesson-feedback good">✓ ${step.tip}</div>`)}
+  else {opts[step.a].classList.add('correct');document.getElementById('jobLesson').insertAdjacentHTML('beforeend',`<div class="lesson-feedback bad">Not quite. The key idea: ${step.tip}</div>`)}
+  document.getElementById('jobActions').innerHTML=`<button class="btn primary" onclick="nextJobStep()">${jobStep===activeJob.steps.length-1?'Finish job':'Next step'}</button>`;
+}
+function renderJobStep(){
+  const j=activeJob,s=j.steps[jobStep];
+  document.getElementById('jobModalTitle').textContent=j.name;
+  document.getElementById('jobModalSub').textContent=`Learn while you work • Step ${jobStep+1} of ${j.steps.length}`;
+  document.getElementById('jobProgress').style.width=((jobStep/j.steps.length)*100)+'%';
+  jobAnswered=false;
+  document.getElementById('jobLesson').innerHTML=`<div class="lesson-q">${s.q}</div><div class="lesson-context">${s.ctx}</div><div class="lesson-options">${s.opts.map((x,i)=>`<button class="lesson-option" onclick="answerJob(${i})">${x}</button>`).join('')}</div>`;
+  document.getElementById('jobActions').innerHTML='<span class="muted" style="font-size:12px">Choose the answer you think is best.</span>';
+}
+function nextJobStep(){
+  if(jobStep<activeJob.steps.length-1){jobStep++;renderJobStep();return}
+  const level=Math.floor(state.jobCount/2),base=activeJob.reward*(1+Math.min(.5,level*.05));
+  const bonus=Math.round(base*(jobScore/activeJob.steps.length)*.25);const reward=Math.round(base+bonus);
+  state.cash+=reward;state.jobCount++;state.jobCooldowns[activeJob.id]=Date.now()+12000;save();closeJob();renderAll();
+  toast(`Job complete: +${money(reward)}${bonus?` • +${money(bonus)} learning bonus`:''}`);
+  setTimeout(()=>{delete state.jobCooldowns[activeJob.id];save();renderAll()},12000);
+}
+function renderCareer(){
+  document.getElementById('careerCash').textContent=money(state.cash);
+  document.getElementById('jobStreakText').textContent=`${state.jobCount} jobs completed. Higher tiers unlock every few jobs. Answer questions correctly for a learning bonus.`;
+  const wrap=document.getElementById('jobs');wrap.innerHTML='';
+  JOBS.forEach(j=>{
+    const locked=state.jobCount<j.need,cooling=!!state.jobCooldowns[j.id];
+    const d=document.createElement('div');d.className='card job-card';
+    d.innerHTML=`<div class="job-icon">${j.icon}</div><div class="job-info"><div class="job-title">${j.name}</div><div class="job-desc">${j.desc}</div><div class="job-reward">Up to +${money(Math.round(j.reward*(1+Math.min(.5,Math.floor(state.jobCount/2)*.05)*1.25)))}</div></div><button class="btn small" ${locked||cooling?'disabled':''} onclick='doJob(${JSON.stringify(j).replace(/'/g,"&#39;")})'>${locked?'Locked':(cooling?'Cooling down':'Take job')}</button>`;
+    wrap.appendChild(d);
+  });
+}
+function renderAll(){renderHome();renderBuild();renderDyno();renderGarage();renderCareer();document.getElementById("cash").textContent=money(state.cash)}
+load();renderAll();
+</script>
+</body>
+</html>
