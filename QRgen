@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code Generator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: #f4f4f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .card {
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      border-color: #4f46e5;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 15px;
+      padding: 12px;
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #4338ca;
+    }
+
+    #qr-container {
+      margin-top: 25px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 200px;
+      border: 2px dashed #eee;
+      border-radius: 8px;
+    }
+
+    #qr-container img {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>QR Code Generator</h1>
+    <input type="text" id="qr-input" placeholder="Enter URL or text...">
+    <button onclick="generateQR()">Generate Code</button>
+    
+    <div id="qr-container">
+      <span style="color: #aaa; font-size: 0.9rem;">Your QR Code will appear here</span>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
+  <script>
+    let qr;
+
+    function generateQR() {
+      const input = document.getElementById("qr-input").value.trim();
+      const container = document.getElementById("qr-container");
+
+      if (!input) {
+        alert("Please enter some text or a URL!");
+        return;
+      }
+
+      // Clear previous QR code
+      container.innerHTML = "";
+
+      // Generate new QR Code
+      qr = new QRCode(container, {
+        text: input,
+        width: 200,
+        height: 200,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+  </script>
+
+</body>
+</html>
