@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0b0f14" />
+<title>Engine Builder Simulator</title>
+<style>
+  :root{
+    --bg:#080b0f; --panel:#11161d; --panel2:#171e27; --line:#2a3440;
+    --text:#f3f6f9; --muted:#8e9aa8; --accent:#ff6b1a; --good:#4ade80;
+    --warn:#facc15; --bad:#fb7185; --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  body{min-height:100vh;overflow-x:hidden}
+  button{font:inherit;color:inherit}
+  .app{max-width:760px;margin:auto;min-height:100vh;background:linear-gradient(#0a0e13,#080b0f)}
+  header{position:sticky;top:0;z-index:10;background:rgba(8,11,15,.94);backdrop-filter:blur(12px);border-bottom:1px solid #18202a;padding:14px 16px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .brand{font-weight:900;letter-spacing:.6px}.brand span{color:var(--accent)}
+  .cash{padding:8px 11px;border-radius:10px;background:#10161d;border:1px solid var(--line);font-weight:800}
+  main{padding:16px 14px 100px}
+  .screen{display:none}.screen.active{display:block}
+  .hero{padding:12px 4px 18px}
+  h1{font-size:28px;line-height:1.05;margin:0 0 7px}.sub{color:var(--muted);font-size:14px;line-height:1.45}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(min-width:640px){.grid{grid-template-columns:repeat(3,1fr)}}
+  .card{background:linear-gradient(160deg,var(--panel),#0e1319);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+  .engine-card{min-height:190px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:.15s}
+  .engine-card:active{transform:scale(.985)}
+  .engine-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 15px 35px rgba(255,107,26,.12)}
+  .engine-icon{height:85px;border-radius:12px;background:
+      radial-gradient(circle at 52% 44%, #4a5664 0 9%, #222b35 10% 18%, transparent 19%),
+      linear-gradient(145deg,#202a34,#0b0f14);display:grid;place-items:center;overflow:hidden;
+      position:relative}
+  .engine-icon:after{content:"";width:45px;height:23px;border:3px solid #7c8794;border-radius:50%;transform:rotate(-18deg)}
+  .engine-name{font-size:17px;font-weight:900;margin-top:10px}.engine-meta{color:var(--muted);font-size:12px;margin-top:3px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+  .stat{background:#0c1116;border:1px solid #202934;border-radius:10px;padding:7px}.stat b{display:block;font-size:13px}.stat span{font-size:10px;color:var(--muted)}
+  .btn{border:0;border-radius:12px;padding:12px 14px;background:var(--panel2);border:1px solid var(--line);font-weight:800;cursor:pointer}
+  .btn.primary{background:var(--accent);border-color:#ff7e3b;color:white}.btn.good{background:#153821;border-color:#286b3b}.btn.small{padding:9px 10px;border-radius:10px;font-size:13px}
+  .btn:disabled{opacity:.42;cursor:not-allowed}
+  .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+  .section-title{margin:22px 2px 10px;font-size:14px;font-weight:900;letter-spacing:.4px;text-transform:uppercase;color:#c7d0db}
+  .bar{height:9px;background:#0a0f14;border:1px solid #202832;border-radius:999px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#ffb38c);border-radius:999px}
+  .machine{background:radial-gradient(circle at 50% 30%,#28313c,#10151c 55%,#080b0f);border:1px solid #26313d;border-radius:18px;padding:14px;min-height:250px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .engine-drawing{width:90%;height:210px;position:relative}
+  .block{position:absolute;left:15%;top:24%;width:65%;height:46%;background:linear-gradient(145deg,#707c88,#343d47);border-radius:16px 13px 15px 10px;box-shadow:inset -12px -12px 25px rgba(0,0,0,.3),inset 8px 8px 18px rgba(255,255,255,.08)}
+  .head{position:absolute;left:23%;top:10%;width:55%;height:20%;background:linear-gradient(#8a96a2,#515d68);border-radius:8px;transform:skewX(-7deg)}
+  .pan{position:absolute;left:24%;top:67%;width:54%;height:15%;background:linear-gradient(#363f49,#171e25);border-radius:0 0 22px 22px}
+  .turbo{position:absolute;right:6%;top:39%;width:52px;height:52px;border:8px solid #8996a1;border-radius:50%;box-shadow:inset 0 0 0 5px #26303a}
+  .turbo:after{content:"";position:absolute;left:11px;top:11px;width:15px;height:15px;border-radius:50%;background:#303a45}
+  .pipe{position:absolute;right:14%;top:31%;width:80px;height:32px;border:8px solid #6c7782;border-left:0;border-bottom:0;border-radius:0 25px 0 0;transform:rotate(4deg)}
+  .plug{position:absolute;left:29%;top:38%;width:10%;height:12%;border-radius:4px;background:#c9d0d7;box-shadow:12px 0 0 #c9d0d7,24px 0 0 #c9d0d7,36px 0 0 #c9d0d7,48px 0 0 #c9d0d7}
+  .assembly-note{position:absolute;bottom:10px;left:12px;right:12px;text-align:center;color:#9ca8b5;font-size:12px}
+  .part{display:flex;align-items:center;gap:11px}
+  .part-info{flex:1;min-width:0}.part-name{font-weight:900;font-size:14px}.part-desc{font-size:11px;color:var(--muted);margin-top:2px}
+  .tag{display:inline-block;margin-top:5px;padding:3px 6px;border-radius:7px;background:#0b1015;border:1px solid #27313b;color:#aeb9c5;font-size:9px;font-weight:800}
+  .part-card{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .part-icon{width:42px;height:42px;border-radius:11px;background:#0c1117;border:1px solid #26313c;display:grid;place-items:center;font-size:21px;flex:0 0 auto}
+  .qty{font-size:12px;font-weight:900;color:#d9e0e7}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(12,16,21,.97);border-top:1px solid #202a34;display:flex;justify-content:center}
+  .tabbar{width:min(760px,100%);display:grid;grid-template-columns:repeat(4,1fr);padding:6px 6px max(6px,env(safe-area-inset-bottom))}
+  .tab{background:none;border:0;color:#778391;padding:7px 4px;border-radius:10px;font-size:11px;font-weight:800}.tab.active{color:white;background:#161d25}
+  .tab .ico{display:block;font-size:18px;margin-bottom:2px}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.kpi{padding:12px;background:#10161c;border:1px solid #232e38;border-radius:13px}.kpi b{font-size:20px;display:block}.kpi span{font-size:10px;color:var(--muted)}
+  .dyno{position:relative;height:250px;margin-top:10px;background:repeating-linear-gradient(to right,#121920 0,#121920 1px,#0d1217 1px,#0d1217 44px),repeating-linear-gradient(to bottom,#121920 0,#121920 1px,#0d1217 1px,#0d1217 44px);border:1px solid #27323e;border-radius:15px;overflow:hidden}
+  canvas{width:100%;height:100%;display:block}
+  .log{background:#090d12;border:1px solid #202a34;border-radius:12px;padding:10px;max-height:150px;overflow:auto;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#aab4bf}
+  .log div{padding:3px 0}.green{color:var(--good)}.yellow{color:var(--warn)}.red{color:var(--bad)}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;display:none;align-items:flex-end;justify-content:center}.modal.open{display:flex}
+  .sheet{width:min(760px,100%);max-height:90vh;overflow:auto;background:#10151b;border-top:1px solid #2c3844;border-radius:20px 20px 0 0;padding:17px}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.x{border:0;background:#1a222b;border-radius:10px;padding:7px 11px}
+  .option{border:1px solid var(--line);background:#121922;border-radius:13px;padding:12px;margin:8px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}
+  .option strong{display:block}.option small{color:var(--muted)}
+  .toast{position:fixed;left:50%;bottom:82px;transform:translateX(-50%) translateY(15px);background:#f4f7fa;color:#111;border-radius:999px;padding:9px 14px;font-size:12px;font-weight:900;opacity:0;pointer-events:none;transition:.2s;z-index:60;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .muted{color:var(--muted)}
+  .split{display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .checkbox{display:flex;align-items:center;gap:8px;font-size:12px;color:#b4bec9}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .slider-row{padding:10px 0}.slider-label{display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="top">
+    <div class="brand">ENGINE <span>BUILDER</span></div>
+    <div class="cash" id="cash">$25,000</div>
+  </div>
+</header>
+
+<main>
+  <section id="home" class="screen active">
+    <div class="hero">
+      <h1>Build your dream motor.</h1>
+      <div class="sub">Choose a platform, spec every major component, assemble the engine, then put it on the dyno.</div>
+    </div>
+    <div class="section-title">Choose a platform</div>
+    <div class="grid" id="engineGrid"></div>
+  </section>
+
+  <section id="build" class="screen">
+    <div class="hero">
+      <div class="split">
+        <div><h1 id="buildTitle">Engine Build</h1><div class="sub" id="buildSub"></div></div>
+        <button class="btn small" onclick="resetBuild()">Reset</button>
+      </div>
+    </div>
+    <div class="machine">
+      <div class="engine-drawing">
+        <div class="head"></div><div class="block"></div><div class="pan"></div><div class="plug"></div>
+        <div class="pipe"></div><div class="turbo"></div>
+      </div>
+      <div class="assembly-note" id="assemblyNote">Start installing parts below.</div>
+    </div>
+
+    <div class="section-title">Build stats</div>
+    <div class="kpis">
+      <div class="kpi"><b id="hpOut">—</b><span>EST. HORSEPOWER</span></div>
+      <div class="kpi"><b id="tqOut">—</b><span>EST. TORQUE</span></div>
+      <div class="kpi"><b id="relOut">—</b><span>RELIABILITY</span></div>
+      <div class="kpi"><b id="valOut">—</b><span>BUILD VALUE</span></div>
+    </div>
+
+    <div class="section-title">Components</div>
+    <div id="parts"></div>
+
+    <div class="section-title">Assembly progress</div>
+    <div class="bar"><i id="progressBar" style="width:0%"></i></div>
+    <div class="sub" id="progressText" style="margin-top:6px"></div>
+    <div class="actions">
+      <button class="btn primary" id="finishBtn" onclick="finishBuild()">Assemble engine</button>
+      <button class="btn" onclick="openTune()">Tune & configure</button>
+    </div>
+  </section>
+
+  <section id="dyno" class="screen">
+    <div class="hero">
+      <h1>Dyno Lab</h1>
+      <div class="sub">A rough game estimate based on your installed parts and tune. Push the setup and see what breaks.</div>
+    </div>
+    <div class="dyno"><canvas id="chart" width="700" height="330"></canvas></div>
+    <div class="kpis" style="margin-top:10px">
+      <div class="kpi"><b id="dynoHp">—</b><span>PEAK HP</span></div>
+      <div class="kpi"><b id="dynoTq">—</b><span>PEAK TORQUE</span></div>
+      <div class="kpi"><b id="boostOut">—</b><span>BOOST / LOAD</span></div>
+      <div class="kpi"><b id="scoreOut">—</b><span>BUILD SCORE</span></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" onclick="runDyno()">Run dyno pull</button>
+      <button class="btn" onclick="openTune()">Change tune</button>
+    </div>
+    <div class="section-title">Dyno log</div>
+    <div class="log" id="dynoLog"><div class="muted">No pulls yet.</div></div>
+  </section>
+
+  <section id="garage" class="screen">
+    <div class="hero">
+      <h1>Garage</h1>
+      <div class="sub">Your current project and spending.</div>
+    </div>
+    <div class="card">
+      <div class="split"><strong>Current engine</strong><strong id="garageEngine">None</strong></div>
+      <div class="bar" style="margin:12px 0 6px"><i id="garageBar" style="width:0%"></i></div>
+      <div class="split muted" style="font-size:12px"><span id="garageProgress">0% assembled</span><span id="garageSpent">$0 spent</span></div>
+    </div>
+    <div class="section-title">How to play</div>
+    <div class="card" style="line-height:1.55;font-size:13px">
+      Pick an engine platform → install parts → tune fuel/boost → assemble → run the dyno.
+      Better parts improve power, reliability, and score, but they cost more. Over-aggressive tunes can make the engine less reliable.
+    </div>
+  </section>
+</main>
+
+<div class="tabs">
+  <div class="tabbar">
+    <button class="tab active" data-screen="home"><span class="ico">🏠</span>Engines</button>
+    <button class="tab" data-screen="build"><span class="ico">🔧</span>Build</button>
+    <button class="tab" data-screen="dyno"><span class="ico">📈</span>Dyno</button>
+    <button class="tab" data-screen="garage"><span class="ico">🧰</span>Garage</button>
+  </div>
+</div>
+
+<div class="modal" id="tuneModal" onclick="if(event.target===this)closeTune()">
+  <div class="sheet">
+    <div class="sheet-head"><strong>Tune & configure</strong><button class="x" onclick="closeTune()">✕</button></div>
+    <div class="sub">Dial the setup before the dyno. Higher aggressiveness can add power but reduces reliability.</div>
+    <div class="slider-row">
+      <div class="slider-label"><span>Fuel / Injection</span><span id="fuelVal">50%</span></div>
+      <input id="fuel" type="range" min="0" max="100" value="50" oninput="syncTune()">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label"><span>Boost / Load</span><span id="boostVal">50%</span></div>
+      <input id="boost" type="range" min="0" max="100" value="50" oninput="syncTune()">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label"><span>Ignition / Timing</span><span id="timingVal">50%</span></div>
+      <input id="timing" type="range" min="0" max="100" value="50" oninput="syncTune()">
+    </div>
+    <label class="checkbox"><input type="checkbox" id="econ"> Street-safe tune (caps risky settings)</label>
+    <div class="actions"><button class="btn primary" onclick="saveTune()">Save tune</button><button class="btn" onclick="closeTune()">Cancel</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const ENGINE_DATA = {
+  ea888:{
+    name:"EA888", family:"2.0L Turbo I4", baseHp:220, baseTq:258, baseReliability:82, price:6200,
+    blurb:"Compact turbo four with huge aftermarket potential.",
+    parts:[
+      {id:"short",name:"Forged short block",desc:"Forged rods + pistons",icon:"⚙️",cost:2800,hp:20,rel:8},
+      {id:"head",name:"CNC cylinder head",desc:"Improved flow",icon:"🔩",cost:1900,hp:18,rel:3},
+      {id:"turbo",name:"Hybrid turbo",desc:"Quick-spool performance",icon:"🌀",cost:2400,hp:48,rel:-2},
+      {id:"fuel",name:"Upgraded fuel system",desc:"Higher fuel capacity",icon:"⛽",cost:1500,hp:20,rel:-1},
+      {id:"intake",name:"Cold-air intake",desc:"Reduced restriction",icon:"🌬️",cost:700,hp:10,rel:1},
+      {id:"exhaust",name:"3-inch exhaust",desc:"High-flow exhaust",icon:"💨",cost:1000,hp:13,rel:0},
+      {id:"cooling",name:"Big intercooler",desc:"Controls charge temp",icon:"❄️",cost:1100,hp:8,rel:6},
+    ]
+  },
+  ps:{
+    name:"6.7 Powerstroke", family:"6.7L Turbo Diesel V8", baseHp:475, baseTq:1050, baseReliability:88, price:9100,
+    blurb:"Heavy-duty diesel torque monster.",
+    parts:[
+      {id:"short",name:"Forged bottom end",desc:"Built for cylinder pressure",icon:"⚙️",cost:3900,hp:35,rel:9},
+      {id:"turbo",name:"Street compound turbo",desc:"Bigger air system",icon:"🌀",cost:4200,hp:75,rel:-3},
+      {id:"fuel",name:"High-flow injectors",desc:"More diesel delivery",icon:"⛽",cost:2600,hp:70,rel:-2},
+      {id:"intake",name:"High-flow intake",desc:"Less intake restriction",icon:"🌬️",cost:900,hp:23,rel:2},
+      {id:"exhaust",name:"4-inch turbo-back",desc:"Low restriction",icon:"💨",cost:1700,hp:28,rel:1},
+      {id:"cooling",name:"Heavy-duty intercooler",desc:"Lower IATs",icon:"❄️",cost:1700,hp:18,rel:7},
+      {id:"trans",name:"Built transmission",desc:"Handles big torque",icon:"🔗",cost:4400,hp:0,rel:12},
+    ]
+  },
+  jz:{
+    name:"2JZ-GTE", family:"3.0L Turbo I6", baseHp:280, baseTq:320, baseReliability:90, price:8200,
+    blurb:"Legendary inline-six platform for street and drag builds.",
+    parts:[
+      {id:"short",name:"Forged bottom end",desc:"Forged piston + rod package",icon:"⚙️",cost:3300,hp:30,rel:9},
+      {id:"head",name:"Ported cylinder head",desc:"Higher-flow valvetrain",icon:"🔩",cost:2100,hp:22,rel:4},
+      {id:"turbo",name:"Single big turbo",desc:"High-flow power maker",icon:"🌀",cost:3100,hp:95,rel:-4},
+      {id:"fuel",name:"Triple-pump fuel system",desc:"Serious fuel overhead",icon:"⛽",cost:2700,hp:28,rel:-2},
+      {id:"intake",name:"Race intake manifold",desc:"Better top-end flow",icon:"🌬️",cost:1200,hp:24,rel:2},
+      {id:"exhaust",name:"3.5-inch exhaust",desc:"Spool + flow",icon:"💨",cost:1400,hp:23,rel:0},
+      {id:"cooling",name:"Large front-mount intercooler",desc:"Stable charge air",icon:"❄️",cost:1500,hp:15,rel:7},
+      {id:"trans",name:"Built manual gearbox",desc:"Launch-ready drivetrain",icon:"🔗",cost:3200,hp:0,rel:10},
+    ]
+  }
+};
+
+let state = {
+  cash:25000, engine:null, installed:{}, tune:{fuel:50,boost:50,timing:50,econ:false},
+  assembled:false, spent:0, dyno:[], lastRun:null
+};
+
+const money = n => "$" + Math.round(n).toLocaleString();
+function save(){ localStorage.setItem("engineBuilderState",JSON.stringify(state)); }
+function load(){
+  try{ const s=JSON.parse(localStorage.getItem("engineBuilderState")); if(s) state={...state,...s}; }catch(e){}
+}
+function toast(t){const el=document.getElementById("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("show"),1700)}
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===id));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.screen===id));
+  if(id==="build")renderBuild(); if(id==="dyno")renderDyno(); if(id==="garage")renderGarage();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showScreen(t.dataset.screen));
+
+function selectEngine(key){
+  const e=ENGINE_DATA[key];
+  if(state.engine && state.engine!==key){ if(!confirm("Start a new engine project? Your current build will be replaced."))return; }
+  state.engine=key; state.installed={}; state.assembled=false; state.spent=e.price; state.cash=Math.max(0,25000-e.price); state.dyno=[]; state.lastRun=null;
+  save(); renderAll(); showScreen("build"); toast(e.name+" selected");
+}
+function resetBuild(){
+  if(!state.engine)return;
+  const e=ENGINE_DATA[state.engine]; state.cash=25000-e.price;state.installed={};state.spent=e.price;state.assembled=false;state.dyno=[];state.lastRun=null;save();renderAll();toast("Build reset");
+}
+function installPart(id){
+  if(!state.engine)return;
+  const part=ENGINE_DATA[state.engine].parts.find(p=>p.id===id); if(!part)return;
+  if(state.installed[id]){ state.cash+=part.cost;state.spent-=part.cost;delete state.installed[id]; state.assembled=false; save();renderAll();toast(part.name+" removed"); return; }
+  if(state.cash<part.cost){toast("Not enough cash");return}
+  state.cash-=part.cost;state.spent+=part.cost;state.installed[id]=true;state.assembled=false;save();renderAll();toast(part.name+" installed");
+}
+function buildStats(){
+  if(!state.engine)return {hp:0,tq:0,rel:0,val:0,progress:0};
+  const e=ENGINE_DATA[state.engine], parts=e.parts.filter(p=>state.installed[p.id]);
+  let hp=e.baseHp, rel=e.baseReliability, val=e.price;
+  for(const p of parts){hp+=p.hp;rel+=p.rel;val+=p.cost}
+  const t=state.tune;
+  const aggression=((t.fuel+t.boost+t.timing)/3-50)/50;
+  hp*=1+(aggression*0.22);
+  rel-=Math.max(0,aggression*12);
+  if(t.econ){hp*=.94;rel+=8}
+  rel=Math.max(15,Math.min(99,rel));
+  hp=Math.round(hp);
+  let tq=Math.round(e.baseTq*(hp/e.baseHp)*(state.engine==="ps"?1.06:1.0));
+  const progress=Math.round(parts.length/e.parts.length*100);
+  return {hp,tq,rel:Math.round(rel),val,progress};
+}
+function renderHome(){
+  const g=document.getElementById("engineGrid");g.innerHTML="";
+  Object.entries(ENGINE_DATA).forEach(([key,e])=>{
+    const d=buildStatsFor(key);
+    const div=document.createElement("div");div.className="card engine-card"+(state.engine===key?" selected":"");
+    div.onclick=()=>selectEngine(key);
+    div.innerHTML=`<div><div class="engine-icon"></div><div class="engine-name">${e.name}</div><div class="engine-meta">${e.family}</div></div>
+      <div class="stats"><div class="stat"><b>${e.baseHp} hp</b><span>STOCK POWER</span></div><div class="stat"><b>${money(e.price)}</b><span>BASE COST</span></div></div>`;
+    g.appendChild(div);
+  });
+}
+function buildStatsFor(key){const e=ENGINE_DATA[key];return {hp:e.baseHp}}
+function renderBuild(){
+  if(!state.engine){showScreen("home");return}
+  const e=ENGINE_DATA[state.engine], s=buildStats();
+  document.getElementById("buildTitle").textContent=e.name+" build";
+  document.getElementById("buildSub").textContent=e.family+" • "+e.blurb;
+  document.getElementById("hpOut").textContent=s.hp+" hp";
+  document.getElementById("tqOut").textContent=s.tq+" lb-ft";
+  document.getElementById("relOut").textContent=s.rel+"/100";
+  document.getElementById("valOut").textContent=money(s.val);
+  document.getElementById("progressBar").style.width=s.progress+"%";
+  document.getElementById("progressText").textContent=s.progress+"% of listed components installed";
+  document.getElementById("finishBtn").disabled=s.progress<50 || state.assembled;
+  document.getElementById("finishBtn").textContent=state.assembled?"Engine assembled ✓":"Assemble engine";
+  document.getElementById("assemblyNote").textContent=state.assembled?"Built and ready for dyno.":"Install at least half the components to assemble.";
+  document.getElementById("cash").textContent=money(state.cash);
+  const wrap=document.getElementById("parts");wrap.innerHTML="";
+  e.parts.forEach(p=>{
+    const on=!!state.installed[p.id];
+    const div=document.createElement("div");div.className="card part-card";
+    div.innerHTML=`<div class="part-icon">${p.icon}</div><div class="part-info"><div class="part-name">${p.name}</div><div class="part-desc">${p.desc}</div><span class="tag">${p.hp>=0?"+":""}${p.hp} hp • ${p.rel>=0?"+":""}${p.rel} rel</span></div>
+      <button class="btn small ${on?"good":""}" onclick="installPart('${p.id}')">${on?"Remove":money(p.cost)}</button>`;
+    wrap.appendChild(div);
+  });
+}
+function finishBuild(){
+  const s=buildStats();
+  if(s.progress<50){toast("Install at least 50% of components");return}
+  state.assembled=true;save();renderAll();toast("Engine assembled!");
+  showScreen("dyno");
+}
+function openTune(){
+  if(!state.engine){toast("Choose an engine first");return}
+  document.getElementById("fuel").value=state.tune.fuel;document.getElementById("boost").value=state.tune.boost;document.getElementById("timing").value=state.tune.timing;document.getElementById("econ").checked=state.tune.econ;syncTune();
+  document.getElementById("tuneModal").classList.add("open");
+}
+function closeTune(){document.getElementById("tuneModal").classList.remove("open")}
+function syncTune(){
+  const f=+document.getElementById("fuel").value,b=+document.getElementById("boost").value,t=+document.getElementById("timing").value,e=document.getElementById("econ").checked;
+  document.getElementById("fuelVal").textContent=f+"%";document.getElementById("boostVal").textContent=b+"%";document.getElementById("timingVal").textContent=t+"%";
+  if(e){
+    // visually cap only; actual values get capped on save
+  }
+}
+function saveTune(){
+  let f=+document.getElementById("fuel").value,b=+document.getElementById("boost").value,t=+document.getElementById("timing").value,e=document.getElementById("econ").checked;
+  if(e){f=Math.min(f,65);b=Math.min(b,65);t=Math.min(t,65)}
+  state.tune={fuel:f,boost:b,timing:t,econ:e};save();closeTune();renderAll();toast("Tune saved");
+}
+function runDyno(){
+  if(!state.engine){toast("Choose an engine first");return}
+  if(!state.assembled){toast("Assemble the engine first");showScreen("build");return}
+  const s=buildStats(), t=state.tune;
+  const stress=((t.fuel+t.boost+t.timing)/3);
+  const danger=Math.max(0,(stress-68)/32);
+  const failure=Math.min(.46,danger*.58 + (100-s.rel)/220);
+  const failed=Math.random()<failure;
+  let hp=s.hp,tq=s.tq,score=Math.round((hp/10)+s.rel*.55+s.progress*0.7);
+  if(failed){hp=Math.round(hp*(.55+Math.random()*.2));tq=Math.round(tq*(.6+Math.random()*.15));score=Math.max(5,score-25)}
+  const boost=state.engine==="ps"?Math.round(22+(t.boost*.24)):Math.round(8+(t.boost*.32));
+  const run={time:new Date().toLocaleTimeString(),hp,tq,boost,score,failed};state.lastRun=run;state.dyno.push(run);if(state.dyno.length>8)state.dyno.shift();save();renderDyno();
+  toast(failed?"Dyno pull failed — too much stress":"Clean dyno pull: "+hp+" hp");
+}
+function renderDyno(){
+  const r=state.lastRun;
+  document.getElementById("dynoHp").textContent=r?r.hp+" hp":"—";
+  document.getElementById("dynoTq").textContent=r?r.tq+" lb-ft":"—";
+  document.getElementById("boostOut").textContent=r?r.boost+(state.engine==="ps"?"% load":" psi"):"—";
+  document.getElementById("scoreOut").textContent=r?r.score:"—";
+  const log=document.getElementById("dynoLog");log.innerHTML="";
+  if(!state.dyno.length){log.innerHTML='<div class="muted">No pulls yet.</div>'}
+  else [...state.dyno].reverse().forEach(x=>{const d=document.createElement("div");d.className=x.failed?"red":"green";d.textContent=`[${x.time}] ${x.failed?"FAIL":"PASS"}  ${x.hp} hp  ${x.tq} lb-ft  score ${x.score}`;log.appendChild(d)});
+  drawChart();
+}
+function drawChart(){
+  const c=document.getElementById("chart"),ctx=c.getContext("2d"),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle="#2a3540";ctx.lineWidth=1;
+  for(let x=0;x<w;x+=70){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+  for(let y=0;y<h;y+=55){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  if(!state.lastRun)return;
+  const hp=state.lastRun.hp,tq=state.lastRun.tq;
+  ctx.lineWidth=5;ctx.strokeStyle="#ff6b1a";ctx.beginPath();
+  for(let i=0;i<=100;i++){const x=20+i*(w-40)/100;const factor=Math.sin((i/100)*Math.PI*.95)*(.82+.12*Math.sin(i/11));const y= h-25-factor*(h-70)*(hp/Math.max(hp,700));if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+  ctx.lineWidth=3;ctx.strokeStyle="#8aa1b5";ctx.beginPath();
+  for(let i=0;i<=100;i++){const x=20+i*(w-40)/100;const factor=Math.sin((i/100)*Math.PI*.9)*(.65+.08*Math.sin(i/14));const y=h-25-factor*(h-70)*(tq/Math.max(tq,1200));if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+  ctx.fillStyle="#ff6b1a";ctx.font="bold 13px system-ui";ctx.fillText("HP",w-55,25);ctx.fillStyle="#8aa1b5";ctx.fillText("TQ",w-55,45);
+}
+function renderGarage(){
+  const e=state.engine?ENGINE_DATA[state.engine]:null,s=state.engine?buildStats():{progress:0};
+  document.getElementById("garageEngine").textContent=e?e.name:"None";
+  document.getElementById("garageBar").style.width=s.progress+"%";
+  document.getElementById("garageProgress").textContent=s.progress+"% assembled";
+  document.getElementById("garageSpent").textContent=money(state.spent)+" spent";
+}
+function renderAll(){renderHome();renderBuild();renderDyno();renderGarage();document.getElementById("cash").textContent=money(state.cash)}
+load();renderAll();
+</script>
+</body>
+</html>
